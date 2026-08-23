@@ -1,0 +1,102 @@
+class JsonLexer {
+    String src
+    Int pos
+    Int len
+
+    public 
+constructor(String src) {
+        this.src = src
+        this.pos = 0
+        this.len = src.length()
+    }
+atEnd(): Bool {
+        return pos >= len
+    }
+peek(): String {
+        if (this.atEnd()) {
+            return ""
+        }
+        return src.substring(pos, pos + 1)
+    }
+startsWith(String s): Bool {
+        if (pos + s.length() > len) {
+            return false
+        }
+        return src.substring(pos, pos + s.length()) == s
+    }
+isDigit(String c): Bool {
+        return c == "0" || c == "1" || c == "2" || c == "3" || c == "4" ||
+            c == "5" || c == "6" || c == "7" || c == "8" || c == "9"
+    }
+scanNumber() {
+        if (this.peek() == "-") {
+            pos++
+        }
+        while (this.isDigit(this.peek())) {
+            pos++
+        }
+        if (this.peek() == ".") {
+            pos++
+            while (this.isDigit(this.peek())) {
+                pos++
+            }
+        }
+    }
+scanString(): Bool {
+        pos++
+        while (!this.atEnd()) {
+            var c = this.peek()
+            if (c == "\\") {
+                pos++
+                if (!this.atEnd()) {
+                    pos++
+                }
+            } else if (c == "\"") {
+                pos++
+                return true
+            } else {
+                pos++
+            }
+        }
+        return false
+    }
+tokenize(): List<Token> {
+        var list = listOf(new Token("", "", 0, 0))
+        while (!this.atEnd()) {
+            var c = this.peek()
+            if (c == " " || c == "\t" || c == "\n" || c == "\r") {
+                pos++
+                continue
+            }
+            var start = pos
+            var kind = "identifier"
+            if (c == "\"") {
+                kind = "string"
+                if (!this.scanString()) {
+                    kind = "error"
+                }
+            } else if (c == "-" || this.isDigit(c)) {
+                kind = "number"
+                this.scanNumber()
+            } else if (this.startsWith("true")) {
+                kind = "keyword"
+                pos = pos + 4
+            } else if (this.startsWith("false")) {
+                kind = "keyword"
+                pos = pos + 5
+            } else if (this.startsWith("null")) {
+                kind = "keyword"
+                pos = pos + 4
+            } else if (c == "{" || c == "}" || c == "[" || c == "]" || c == "," || c == ":") {
+                pos++
+                kind = "punctuation"
+            } else {
+                pos++
+                kind = "error"
+            }
+            list.add(new Token(kind, src.substring(start, pos), start, pos))
+        }
+        list.remove(0)
+        return list
+    }
+}

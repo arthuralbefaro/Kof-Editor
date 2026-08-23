@@ -1,0 +1,222 @@
+class Lexer {
+    String src
+    Int pos
+    Int len
+
+    public constructor(String src) {
+        this.src = src
+        this.pos = 0
+        this.len = src.length()
+    }
+
+    public atEnd(): Bool {
+        return pos >= len
+    }
+
+    public peek(): String {
+        if (this.atEnd()) {
+            return ""
+        }
+        return src.substring(pos, pos + 1)
+    }
+
+    public startsWith(String s): Bool {
+        if (pos + s.length() > len) {
+            return false
+        }
+        return src.substring(pos, pos + s.length()) == s
+    }
+
+    isWhitespace(String c): Bool {
+        return " \t\n\r".contains(c)
+    }
+
+    isDigit(String c): Bool {
+        return "0123456789".contains(c)
+    }
+
+    isLetter(String c): Bool {
+        return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(c)
+    }
+
+    isIdentStart(String c): Bool {
+        return this.isLetter(c) || c == "_"
+    }
+
+    scanToLineEnd() {
+        while (!this.atEnd()) {
+            if (this.peek() == "\n") {
+                return;
+            }
+            pos++
+        }
+    }
+
+    scanBlock() {
+        pos = pos + 2
+        while (!this.atEnd()) {
+            if (this.startsWith("*/")) {
+                pos = pos + 2
+                return;
+            }
+            pos++
+        }
+    }
+
+    scanString(): Bool {
+        pos++
+        while (!this.atEnd()) {
+            var c = this.peek()
+            if (c == "\\") {
+                pos++
+                if (!this.atEnd()) {
+                    pos++
+                }
+            } else if (c == "\"") {
+                pos++
+                return true
+            } else {
+                pos++
+            }
+        }
+        return false
+    }
+
+    scanCharLiteral(): Bool {
+        pos++
+        while (!this.atEnd()) {
+            var c = this.peek()
+            if (c == "\\") {
+                pos++
+                if (!this.atEnd()) {
+                    pos++
+                }
+            } else if (c == "'") {
+                pos++
+                return true
+            } else {
+                pos++
+            }
+        }
+        return false
+    }
+
+    scanNumber() {
+        while (this.isDigit(this.peek())) {
+            pos++
+        }
+        if (this.peek() == ".") {
+            pos++
+            while (this.isDigit(this.peek())) {
+                pos++
+            }
+        }
+        var c = this.peek()
+        if (c == "L" || c == "f" || c == "F" || c == "d" || c == "D") {
+            pos++
+        }
+    }
+
+    isTwoCharOperator(): Bool {
+        return this.startsWith("==") || this.startsWith("!=") || this.startsWith("<=") || this.startsWith(">=") ||
+            this.startsWith("&&") || this.startsWith("||") || this.startsWith("++") || this.startsWith("--") ||
+            this.startsWith("+=") || this.startsWith("-=") || this.startsWith("*=") || this.startsWith("/=") ||
+            this.startsWith("%=") || this.startsWith("<<") || this.startsWith(">>")
+    }
+
+    isPunctuation(String c): Bool {
+        return "()[]{},;:.".contains(c)
+    }
+
+    isSingleOperator(String c): Bool {
+        return "+-*/%!<>=&|^~?".contains(c)
+    }
+
+    scanIdentifier(Int start): String {
+        while (this.isIdentStart(this.peek()) || this.isDigit(this.peek())) {
+            pos++
+        }
+        return src.substring(start, pos)
+    }
+
+    isKeyword(String w): Bool {
+        return w == "class" || w == "interface" || w == "record" || w == "extends" || w == "implements" ||
+            w == "package" || w == "import" || w == "public" || w == "private" || w == "protected" ||
+            w == "static" || w == "final" || w == "abstract" || w == "native" || w == "default" || w == "override" ||
+            w == "new" || w == "this" || w == "super" || w == "return" || w == "throw" ||
+            w == "if" || w == "else" || w == "for" || w == "while" || w == "do" ||
+            w == "switch" || w == "case" || w == "break" || w == "continue" ||
+            w == "try" || w == "catch" || w == "finally" || w == "instanceof" || w == "as" ||
+            w == "fun" || w == "var" || w == "val" || w == "void" ||
+            w == "true" || w == "false" || w == "null"
+    }
+
+    isTypeName(String w): Bool {
+        return w == "Bool" || w == "Byte" || w == "Short" || w == "Int" || w == "Long" ||
+            w == "Float" || w == "Double" || w == "Char" || w == "String"
+    }
+
+    classify(String w): String {
+        if (this.isKeyword(w)) {
+            return "keyword"
+        }
+        if (this.isTypeName(w)) {
+            return "type"
+        }
+        return "identifier"
+    }
+
+
+    public tokenize(): List<Token> {
+        var list = listOf(new Token("", "", 0, 0))
+        while (!this.atEnd()) {
+            var c = this.peek()
+            if (this.isWhitespace(c)) {
+                pos++
+                continue
+            }
+            var start = pos
+            var kind = "identifier"
+            if (this.startsWith("//")) {
+                kind = "comment"
+                this.scanToLineEnd()
+            } else if (this.startsWith("/*")) {
+                kind = "comment"
+                this.scanBlock()
+            } else if (c == "\"") {
+                kind = "string"
+                if (!this.scanString()) {
+                    kind = "error"
+                }
+            } else if (c == "'") {
+                kind = "char"
+                if (!this.scanCharLiteral()) {
+                    kind = "error"
+                }
+            } else if (this.isDigit(c)) {
+                kind = "number"
+                this.scanNumber()
+            } else if (this.isIdentStart(c)) {
+                kind = this.classify(this.scanIdentifier(start))
+            } else if (this.startsWith(">>>")) {
+                pos = pos + 3
+                kind = "operator"
+            } else if (this.isTwoCharOperator()) {
+                pos = pos + 2
+                kind = "operator"
+            } else if (this.isPunctuation(c)) {
+                pos++
+                kind = "punctuation"
+            } else if (this.isSingleOperator(c)) {
+                pos++
+                kind = "operator"
+            } else {
+                pos++
+                kind = "error"
+            }
+            list.add(new Token(kind, src.substring(start, pos), start, pos))
+        }
+        list.remove(0)
+        return list
+    }
+}

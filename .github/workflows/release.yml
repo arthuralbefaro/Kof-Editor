@@ -1,0 +1,56 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  release-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: KofLang/Kof4j
+          path: kof4j
+
+      - uses: actions/checkout@v4
+        with:
+          path: editor
+
+      - name: Setup Java 21 + Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build Kof (jars) + webview
+        run: |
+          cd kof4j
+          mvn -q package -DskipTests
+          mkdir -p "$HOME/.local/share/kof-dev/lib"
+          cp kof-cli/target/kof-cli-0.0.5-alpha.jar kof-compiler/target/kof-compiler-0.0.5-alpha.jar \
+             kof-runtime/target/kof-runtime-0.0.5-alpha.jar \
+             $(find . -name "asm*.jar" | head -1) $(find . -name "flatlaf*.jar" | head -1) \
+             "$HOME/.local/share/kof-dev/lib/"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gcc pkg-config libwebkit2gtk-4.1-dev
+          bash scripts/build-webview.sh
+          cd ..
+
+      - name: Release packages
+        run: |
+          chmod +x editor/scripts/release.sh
+          ./editor/scripts/release.sh --jvm
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kof-editor-linux
+          path: editor/dist/*.tar.gz
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: editor/dist/*.tar.gz

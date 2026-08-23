@@ -1,0 +1,1394 @@
+tokenizeResponse(String body): String {
+    return tokenListJson(new Lexer(body).tokenize())
+}
+
+pageHtml(): String {
+    return "<!DOCTYPE html>\n" +
+        "<html lang=\"pt\">\n" +
+        "<head>\n" +
+        "  <meta charset=\"utf-8\">\n" +
+        "  <title>Kof Editor</title>\n" +
+        "  <link rel=\"icon\" href=\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect x=%224%22 y=%224%22 width=%2256%22 height=%2256%22 rx=%2214%22 fill=%22%238be9fd%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22monospace%22 font-size=%2236%22 font-weight=%22bold%22 text-anchor=%22middle%22 fill=%22%231e1e24%22%3EK%3C/text%3E%3C/svg%3E\">\n" +
+        "  <link rel=\"stylesheet\" href=\"/editor.css\">\n" +
+        "</head>\n" +
+        "<body>\n" +
+        "  <div id=\"menubar\">\n" +
+        "    <div class=\"menu\">Arquivo\n" +
+        "      <div class=\"dropdown\">\n" +
+        "        <div class=\"mi\" id=\"mi-open\">Abrir pasta...</div>\n" +
+        "        <div class=\"mi\" id=\"mi-recent\">Pastas recentes</div>\n" +
+        "        <div class=\"mi\" id=\"mi-blank\">Novo em branco</div>\n" +
+        "        <div class=\"mi\" id=\"mi-template\">Novo com template\n" +
+        "          <div class=\"submenu\">\n" +
+        "            <div class=\"mi tpl\" data-lang=\"kof\">Kof</div>\n" +
+        "            <div class=\"mi tpl\" data-lang=\"java\">Java</div>\n" +
+        "            <div class=\"mi tpl\" data-lang=\"c\">C</div>\n" +
+        "            <div class=\"mi tpl\" data-lang=\"python\">Python</div>\n" +
+        "            <div class=\"mi tpl\" data-lang=\"javascript\">JavaScript</div>\n" +
+        "            <div class=\"mi tpl\" data-lang=\"json\">JSON</div>\n" +
+        "            <div class=\"mi tpl\" data-lang=\"html\">HTML</div>\n" +
+        "            <div class=\"mi tpl\" data-lang=\"markdown\">Markdown</div>\n" +
+        "            <div class=\"mi tpl\" data-lang=\"shell\">Shell</div>\n" +
+        "          </div>\n" +
+        "        </div>\n" +
+        "      </div>\n" +
+        "    </div>\n" +
+        "    <div class=\"menu\">Tema\n" +
+        "      <div class=\"dropdown\">\n" +
+        "        <div class=\"mi\" id=\"mi-theme\">Alternar tema</div>\n" +
+        "      </div>\n" +
+        "    </div>\n" +
+        "  </div>\n" +
+        "  <div id=\"app\">\n" +
+        "    <nav id=\"activity\">\n" +
+        "      <button class=\"abtn active\" data-view=\"explorer\" title=\"Explorer (Ctrl+Shift+E)\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 16 16\"><path d=\"M1 3.5 C1 2.9 1.5 2.5 2 2.5 L5.2 2.5 L6.5 4 L14 4 C14.6 4 15 4.4 15 5 L15 12 C15 12.6 14.6 13 14 13 L2 13 C1.4 13 1 12.6 1 12 Z\" fill=\"currentColor\"/></svg></button>\n" +
+        "      <button class=\"abtn\" data-view=\"search\" title=\"Search (Ctrl+Shift+F)\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 16 16\"><circle cx=\"7\" cy=\"7\" r=\"4.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M10.5 10.5 L14 14\" stroke=\"currentColor\" stroke-width=\"1.5\"/></svg></button>\n" +
+        "      <button class=\"abtn\" data-view=\"git\" title=\"Source Control (Ctrl+Shift+G)\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 16 16\"><path d=\"M8 1 L2.5 6.5 L8 12 L13.5 6.5 Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"1\" r=\"1.6\" fill=\"currentColor\"/><circle cx=\"8\" cy=\"12\" r=\"1.6\" fill=\"currentColor\"/></svg></button>\n" +
+        "    </nav>\n" +
+        "    <aside id=\"sidebar\">\n" +
+        "      <div id=\"gitpanel\" style=\"display:none\">\n" +
+        "        <div class=\"panel-title\">Source Control</div>\n" +
+        "        <div class=\"panel-row\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\"><path d=\"M8 1 L2.5 6.5 L8 12 L13.5 6.5 Z\" fill=\"none\" stroke=\"#8be9fd\" stroke-width=\"1.5\"/></svg> <b id=\"gitbranch\">—</b></div>\n" +
+        "        <div id=\"gitlist\"></div>\n" +
+        "        <div style=\"padding:6px 10px\"><button id=\"git-commit-btn\" class=\"gbtn\">Commit all</button> <button id=\"git-diff-btn\" class=\"gbtn\">Diff</button></div>\n" +
+        "        <div class=\"panel-row muted\">Status via process API (F4). Commit/diff chegam em breve.</div>\n" +
+        "      </div>\n" +
+        "      <div id=\"dirbar\"><input id=\"dirinput\" placeholder=\"pasta\"><button id=\"dirbtn\">abrir</button></div>\n" +
+        "      <div id=\"searchbar\"><input id=\"searchinput\" placeholder=\"buscar na pasta...\"><button id=\"searchbtn\">buscar</button></div>\n" +
+        "      <div id=\"searchresults\"></div>\n" +
+        "      <div id=\"tree\"></div>\n" +
+        "    </aside>\n" +
+        "    <div id=\"side-grip\"></div>\n" +
+        "    <main>\n" +
+        "      <div id=\"crumbs\"></div>\n" +
+        "      <div id=\"tabs\"></div>\n" +
+        "      <div id=\"editorwrap\">\n" +
+        "        <div id=\"welcome\">\n" +
+        "          <img src=\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%23bd93f9%22/%3E%3Cstop offset=%221%22 stop-color=%22%238be9fd%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x=%224%22 y=%224%22 width=%2256%22 height=%2256%22 rx=%2214%22 fill=%22url(%23g)%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22monospace%22 font-size=%2236%22 font-weight=%22bold%22 text-anchor=%22middle%22 fill=%22%231e1e24%22%3EK%3C/text%3E%3C/svg%3E\" alt=\"Kof\" style=\"width:96px\">\n" +
+        "          <h1>Kof Editor</h1>\n" +
+        "          <p>Uma linguagem. Um editor. Varios mundos.</p>\n" +
+        "          <p><span class=\"kbd\">Ctrl+P</span> abrir arquivo &nbsp; <span class=\"kbd\">Ctrl+Shift+P</span> comandos &nbsp; <span class=\"kbd\">Ctrl+O</span> pasta</p>\n" +
+        "        </div>\n" +
+        "        <div id=\"gutter\"></div>\n" +
+        "        <div id=\"codearea\">\n" +
+        "          <pre id=\"highlight\"></pre>\n" +
+        "          <textarea id=\"code\" spellcheck=\"false\"></textarea>\n" +
+        "        </div>\n" +
+        "        <div id=\"minimap\"></div>\n" +
+        "      </div>\n" +
+        "    </main>\n" +
+        "  </div>\n" +
+        "  <div id=\"panel\" style=\"display:none\">\n" +
+        "    <div id=\"panel-grip\"></div>\n" +
+        "    <div id=\"panel-tabs\">\n" +
+        "      <span class=\"ptab\" data-panel=\"problems\" id=\"ptab-problems\">PROBLEMS</span>\n" +
+        "      <span class=\"ptab\" data-panel=\"output\" id=\"ptab-output\">OUTPUT</span>\n" +
+        "      <span class=\"ptab active\" data-panel=\"terminal\" id=\"ptab-terminal\">TERMINAL</span>\n" +
+        "      <span class=\"ptab\" data-panel=\"git\" id=\"ptab-git\">GIT</span>\n" +
+        "      <span class=\"ptab-close\" id=\"panel-close\" title=\"Fechar panel (Ctrl+`)\">×</span>\n" +
+        "    </div>\n" +
+        "    <div id=\"problems\" class=\"panel-body\"></div>\n" +
+        "    <div id=\"output\" class=\"panel-body\" style=\"display:none\"></div>\n" +
+        "    <div id=\"terminal\" class=\"panel-body\">\n" +
+        "      <pre id=\"term-out\"></pre>\n" +
+        "      <div id=\"term-line\"><span id=\"term-prompt\">$</span><input id=\"term-input\" spellcheck=\"false\" placeholder=\"comando\"></div>\n" +
+        "    </div>\n" +
+        "    <div id=\"gitpanel-body\" class=\"panel-body\" style=\"display:none\"></div>\n" +
+        "  </div>\n" +
+        "  <footer id=\"status\"></footer>\n" +
+        "  <script src=\"/editor.js\"></script>\n" +
+        "</body>\n" +
+        "</html>\n"
+}
+
+pageCss(): String {
+    return ":root {\n" +
+        "  --sidebar: #18181c; --editor: #1e1e24; --panel: #21222c; --border: #2d2d34;\n" +
+        "  --fg: #f8f8f2; --muted: #a0a8b0; --hover: #26262e; --sel: #3a3d45;\n" +
+        "  --k-keyword: #ff79c6; --k-type: #8be9fd; --k-string: #f1fa8c; --k-number: #ffb86c;\n" +
+        "  --k-comment: #6272a4; --k-error: #ff5555; --gutter: #5a5a66; --accent: #8be9fd;\n" +
+        "}\n" +
+        "html, body { margin: 0; height: 100%; overflow: hidden; }\n" +
+        "body { background: var(--editor); color: var(--fg); font-family: system-ui, sans-serif; display: flex; flex-direction: column; }\n" +
+        "* { box-sizing: border-box; }\n" +
+        "::-webkit-scrollbar { width: 8px; height: 8px; }\n" +
+        "::-webkit-scrollbar-thumb { background: #3a3a44; border-radius: 4px; }\n" +
+        "::-webkit-scrollbar-track { background: transparent; }\n" +
+        "#menubar { display: flex; background: var(--panel); border-bottom: 1px solid var(--border); flex: none; }\n" +
+        ".menu { position: relative; padding: 5px 12px; font-size: 13px; cursor: pointer; user-select: none; }\n" +
+        ".menu:hover { background: var(--hover); }\n" +
+        ".dropdown { display: none; position: absolute; top: 100%; left: 0; background: var(--sidebar);\n" +
+        "  border: 1px solid var(--border); border-radius: 6px; min-width: 190px; z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,.5); }\n" +
+        ".menu:hover .dropdown { display: block; }\n" +
+        ".mi { padding: 7px 14px; font-size: 13px; }\n" +
+        ".mi:hover { background: var(--sel); }\n" +
+        ".submenu { display: none; position: absolute; left: 100%; top: 0; background: var(--sidebar);\n" +
+        "  border: 1px solid var(--border); border-radius: 6px; min-width: 150px; }\n" +
+        "#mi-template:hover .submenu { display: block; }\n" +
+        "#mi-template { position: relative; }\n" +
+        "#app { display: flex; flex: 1; min-height: 0; }\n" +
+        "#activity { width: 46px; background: var(--panel); border-right: 1px solid var(--border);\n" +
+        "  display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; flex: none; }\n" +
+        ".abtn { background: transparent; border: none; color: var(--gutter); cursor: pointer;\n" +
+        "  padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }\n" +
+        ".abtn:hover { color: var(--fg); background: var(--hover); }\n" +
+        ".abtn.active { color: var(--fg); border-left: 2px solid var(--accent); border-radius: 0; }\n" +
+        "#gitpanel .panel-title { padding: 10px 10px 4px; font-size: 12px; text-transform: uppercase;\n" +
+        "  color: var(--muted); letter-spacing: .5px; }\n" +
+        "#gitpanel .panel-row { display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 13px; }\n" +
+        "#gitpanel .panel-row.muted { color: var(--muted); font-size: 12px; line-height: 1.4; }\n" +
+        "#minimap { width: 56px; background: var(--editor); border-left: 1px solid var(--border);\n" +
+        "  overflow: hidden; position: relative; flex: none; }\n" +
+        "#minimap .mm-line { position: absolute; left: 8px; height: 3px; border-radius: 1px; }\n" +
+        "#sidebar { width: 260px; min-width: 180px; max-width: 480px; background: var(--sidebar);\n" +
+        "  border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: auto; }\n" +
+        "#side-grip { width: 4px; cursor: ew-resize; background: transparent; flex: none; }\n" +
+        "#side-grip:hover, #side-grip.dragging { background: var(--accent); }\n" +
+        "#dirbar { display: flex; gap: 8px; padding: 10px 10px 6px; flex: none; }\n" +
+        "#dirinput, #searchinput { flex: 1; background: var(--editor); color: var(--fg); border: 1px solid var(--border);\n" +
+        "  border-radius: 5px; padding: 6px 10px; outline: none; height: 30px; }\n" +
+        "#dirinput:focus, #searchinput:focus { border-color: var(--accent); }\n" +
+        "#dirbtn, #searchbtn { background: var(--sel); color: var(--fg); border: 1px solid var(--border);\n" +
+        "  border-radius: 5px; padding: 6px 12px; cursor: pointer; height: 30px; font-size: 13px; flex: none; }\n" +
+        "#searchbar { display: flex; gap: 8px; padding: 6px 10px; flex: none; }\n" +
+        "#searchresults { display: none; max-height: 35%; overflow: auto; border-bottom: 1px solid var(--border); flex: none; }\n" +
+        "#searchresults .sr { padding: 3px 10px; font-family: monospace; font-size: 12px; cursor: pointer; white-space: nowrap; }\n" +
+        "#searchresults .sr:hover { background: var(--sel); }\n" +
+        "#tree { flex: 1; overflow: auto; padding: 4px 0 20px; }\n" +
+        ".tnode { display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 10px; cursor: pointer; white-space: nowrap; font-size: 13px; }\n" +
+        ".tnode:hover { background: var(--hover); }\n" +
+        ".tdir { color: var(--k-type); font-weight: 600; }\n" +
+        ".tfile { color: var(--fg); }\n" +
+        ".tchildren { margin-left: 14px; }\n" +
+        ".tarrow { display: inline-block; width: 14px; color: var(--gutter); flex: none; }\n" +
+        "main { flex: 1; display: flex; flex-direction: column; min-width: 0; }\n" +
+        "#crumbs { background: var(--editor); color: var(--gutter); font-size: 12px; padding: 3px 12px;\n" +
+        "  border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: none; }\n" +
+        "#crumbs b { color: var(--k-type); }\n" +
+        "#tabs { display: flex; background: var(--panel); overflow-x: auto; flex: none; }\n" +
+        ".tab { display: flex; align-items: center; gap: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer;\n" +
+        "  border-right: 1px solid var(--border); color: var(--muted); user-select: none; border-top: 2px solid transparent; }\n" +
+        ".tab.active { background: var(--editor); color: var(--fg); border-top-color: var(--accent); }\n" +
+        ".tab .x { color: var(--gutter); font-weight: 700; padding: 0 4px; border-radius: 4px; }\n" +
+        ".tab .x:hover { color: var(--k-error); background: var(--sel); }\n" +
+        "#editorwrap { flex: 1; display: flex; min-height: 0; position: relative; }\n" +
+        "#gutter { width: 52px; background: var(--editor); color: var(--gutter); font-family: monospace; font-size: 14px;\n" +
+        "  text-align: right; padding: 12px 10px 12px 0; overflow: hidden; line-height: 1.6; user-select: none; flex: none; }\n" +
+        "#gutter .ln-cur { color: var(--fg); }\n" +
+        "#codearea { flex: 1; position: relative; min-width: 0; }\n" +
+        "#active-line { position: absolute; left: 0; right: 0; background: rgba(139, 233, 253, 0.06); pointer-events: none; }\n" +
+        "#highlight, textarea#code { font-family: monospace; font-size: 14px; line-height: 1.6; padding: 12px 14px; }\n" +
+        "#highlight { margin: 0; white-space: pre; position: absolute; top: 0; left: 0; right: 0; bottom: 0;\n" +
+        "  overflow: hidden; pointer-events: none; }\n" +
+        "textarea#code { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;\n" +
+        "  background: transparent; color: transparent; caret-color: var(--fg); border: none; outline: none; resize: none;\n" +
+        "  white-space: pre; overflow: auto; overscroll-behavior: contain; }\n" +
+        "#tree, #problems, #output, #terminal, #gitpanel-body, #searchresults, #palette-list, #minimap {\n" +
+        "  overscroll-behavior: contain; }\n" +
+        "textarea#code::selection { background: rgba(139, 233, 253, 0.25); }\n" +
+        "#welcome { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;\n" +
+        "  gap: 14px; background: var(--editor); }\n" +
+        "#welcome img { width: 96px; opacity: .9; }\n" +
+        "#welcome h1 { font-size: 20px; margin: 0; }\n" +
+        "#welcome p { color: var(--muted); font-size: 13px; margin: 0; }\n" +
+        "#welcome .kbd { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 12px; }\n" +
+"#problems { background: var(--panel); border-top: 1px solid var(--border); font-family: monospace;\n" +
+        "  font-size: 12px; max-height: 120px; overflow: auto; display: none; }\n" +
+        "#problems .p { padding: 2px 10px; cursor: pointer; color: var(--k-error); }\n" +
+        "#problems .p:hover { background: var(--sel); }\n" +
+        "#panel { display: flex; flex-direction: column; background: var(--panel); border-top: 1px solid var(--border);\n" +
+        "  height: 30vh; min-height: 100px; max-height: 70vh; overscroll-behavior: contain; }\n" +
+        "#panel-grip { height: 5px; cursor: ns-resize; background: var(--border); flex: none; }\n" +
+        "#panel-grip:hover { background: var(--accent); }\n" +
+        "#panel-tabs { display: flex; align-items: center; border-bottom: 1px solid var(--border); font-size: 11px; user-select: none; }\n" +
+        ".ptab { padding: 5px 12px; color: var(--muted); cursor: pointer; border-right: 1px solid var(--border); }\n" +
+        ".ptab.active { color: var(--accent); background: var(--hover); }\n" +
+        ".ptab-close { margin-left: auto; padding: 3px 12px; cursor: pointer; color: var(--muted); font-size: 16px; }\n" +
+        ".ptab-close:hover { color: var(--k-error); }\n" +
+        "#panel .panel-body { max-height: 160px; overflow: auto; font-family: monospace; font-size: 12px; }\n" +
+        "#terminal { padding: 4px 0; }\n" +
+        "#term-out { margin: 0; padding: 4px 10px; color: var(--fg); white-space: pre-wrap; }\n" +
+        "#term-out .te { color: var(--k-error); }\n" +
+        "#term-line { display: flex; align-items: center; gap: 8px; padding: 2px 10px 6px; }\n" +
+        "#term-prompt { color: var(--k-number); }\n" +
+        "#term-input { flex: 1; background: transparent; color: var(--fg); border: none; outline: none;\n" +
+        "  font-family: monospace; font-size: 12px; }\n" +
+        "#output { padding: 6px 10px; color: var(--fg); white-space: pre-wrap; }\n" +
+        "#gitpanel-body { padding: 4px 0; }\n" +
+        ".grow { padding: 4px 10px; cursor: pointer; white-space: nowrap; }\n" +
+        ".grow:hover { background: var(--sel); }\n" +
+        ".grow .gm { color: var(--k-string); }\n" +
+        ".grow .gd { color: var(--k-error); }\n" +
+        ".grow .gu { color: var(--k-number); }\n" +
+        ".gbtn { background: var(--btn, #44475a); color: var(--fg); border: none; border-radius: 4px;\n" +
+        "  padding: 3px 10px; cursor: pointer; font-size: 11px; margin: 2px 4px; }\n" +
+        ".gbtn:hover { background: var(--sel); }\n" +
+        "#git-commit-input { flex: 1; background: var(--input, #282a36); color: var(--fg); border: 1px solid var(--border);\n" +
+        "  border-radius: 4px; padding: 3px 8px; font-size: 11px; }\n" +
+        "#git-head { display: flex; align-items: center; gap: 6px; padding: 4px 8px; }\n" +
+        "footer#status { background: var(--panel); color: var(--muted); font-size: 12px; padding: 3px 10px;\n" +
+        "  display: flex; justify-content: space-between; gap: 8px; flex: none; border-top: 1px solid var(--border); }\n" +
+        "#status .click { cursor: pointer; padding: 0 6px; border-radius: 4px; }\n" +
+        "#status .click:hover { background: var(--sel); color: var(--fg); }\n" +
+        "#palette { display: none; position: fixed; top: 80px; left: 50%; transform: translateX(-50%);\n" +
+        "  width: 460px; background: var(--sidebar); border: 1px solid var(--border); border-radius: 8px;\n" +
+        "  box-shadow: 0 8px 30px rgba(0,0,0,.5); z-index: 100; }\n" +
+        "#palette-input { width: 100%; box-sizing: border-box; background: var(--editor); color: var(--fg);\n" +
+        "  border: none; border-bottom: 1px solid var(--border); padding: 10px 14px; font-size: 14px; outline: none; }\n" +
+        "#palette-list { max-height: 260px; overflow: auto; }\n" +
+        ".pc { padding: 7px 14px; font-size: 13px; cursor: pointer; }\n" +
+        ".pc:hover { background: var(--sel); }\n" +
+        ".k-keyword { color: var(--k-keyword); }\n" +
+        ".k-type { color: var(--k-type); }\n" +
+        ".k-string, .k-char { color: var(--k-string); }\n" +
+        ".k-number { color: var(--k-number); }\n" +
+        ".k-comment { color: var(--k-comment); font-style: italic; }\n" +
+        ".k-error { color: var(--k-error); text-decoration: underline; }\n" +
+        ".k-operator, .k-punctuation, .k-identifier { color: var(--fg); }\n"
+}
+pageJs(): String {
+    return "var docs = [];\n" +
+        "var activeDoc = -1;\n" +
+        "var ta = document.getElementById('code');\n" +
+        "var hl = document.getElementById('highlight');\n" +
+        "var gutter = document.getElementById('gutter');\n" +
+        "var tree = document.getElementById('tree');\n" +
+        "var tabsEl = document.getElementById('tabs');\n" +
+        "var statusEl = document.getElementById('status');\n" +
+        "var dirInput = document.getElementById('dirinput');\n" +
+        "var timer = null;\n" +
+        "var errors = 0;\n" +
+        "\n" +
+        "function fileIcon(name) {\n" +
+        "  var dot = name.lastIndexOf('.');\n" +
+        "  var ext = dot >= 0 ? name.slice(dot + 1) : '';\n" +
+        "  var colors = { html: '#e34c26', js: '#f1e05a', css: '#563d7c', py: '#3572A5',\n" +
+        "    kf: '#8be9fd', json: '#f8f8f2', md: '#6272a4', txt: '#a0a8b0', sh: '#89e051', c: '#555555', java: '#b07219' };\n" +
+        "  var c = colors[ext] || '#a0a8b0';\n" +
+        "  return '<svg class=\"ticon\" width=\"14\" height=\"14\" viewBox=\"0 0 14 14\">' +\n" +
+        "    '<rect x=\"1.5\" y=\"1.5\" width=\"11\" height=\"11\" rx=\"2\" fill=\"none\" stroke=\"' + c + '\" stroke-width=\"1.2\"/>' +\n" +
+        "    '<circle cx=\"7\" cy=\"7\" r=\"2.2\" fill=\"' + c + '\"/></svg>';\n" +
+        "}\n" +
+        "\n" +
+        "function folderIcon() {\n" +
+        "  return '<svg class=\"ticon\" width=\"14\" height=\"14\" viewBox=\"0 0 14 14\">' +\n" +
+        "    '<path d=\"M1 3.5 C1 2.9 1.5 2.5 2 2.5 L5 2.5 L6.5 4 L12 4 C12.6 4 13 4.4 13 5 L13 10.5 C13 11.1 12.6 11.5 12 11.5 L2 11.5 C1.5 11.5 1 11.1 1 10.5 Z\" fill=\"#8be9fd\" opacity=\"0.85\"/></svg>';\n" +
+        "}\n" +
+        "\n" +
+        "function esc(s) {\n" +
+        "  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n" +
+        "}\n" +
+        "\n" +
+        "function nameOf(path) {\n" +
+        "  var p = path.split('/');\n" +
+        "  return p[p.length - 1];\n" +
+        "}\n" +
+        "\n" +
+        "function addDoc(path, text) {\n" +
+        "  for (var i = 0; i < docs.length; i++) {\n" +
+        "    if (docs[i].path === path) {\n" +
+        "      activeDoc = i;\n" +
+        "      renderTabs();\n" +
+        "      loadIntoEditor();\n" +
+        "      return;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  docs.push({path: path, name: nameOf(path), text: text, dirty: false});\n" +
+        "  activeDoc = docs.length - 1;\n" +
+        "  renderTabs();\n" +
+        "  loadIntoEditor();\n" +
+        "}\n" +
+        "\n" +
+        "function closeDoc(i) {\n" +
+        "  docs.splice(i, 1);\n" +
+        "  if (docs.length === 0) {\n" +
+        "    activeDoc = -1;\n" +
+        "    ta.value = '';\n" +
+        "    hl.textContent = '';\n" +
+        "    gutter.textContent = '';\n" +
+        "    statusEl.textContent = 'sem arquivos';\n" +
+        "  } else {\n" +
+        "    if (activeDoc >= i) activeDoc--;\n" +
+        "    if (activeDoc < 0) activeDoc = 0;\n" +
+        "    loadIntoEditor();\n" +
+        "  }\n" +
+        "  renderTabs();\n" +
+        "}\n" +
+        "\n" +
+        "function renderTabs() {\n" +
+        "  tabsEl.innerHTML = '';\n" +
+        "  for (var i = 0; i < docs.length; i++) {\n" +
+        "    var t = document.createElement('div');\n" +
+        "    t.className = 'tab' + (i === activeDoc ? ' active' : '');\n" +
+        "    t.textContent = docs[i].name + (docs[i].dirty ? ' ●' : '');\n" +
+        "    t.onclick = function(j) { return function() {\n" +
+        "      activeDoc = j;\n" +
+        "      renderTabs();\n" +
+        "      loadIntoEditor();\n" +
+        "    }; }(i);\n" +
+        "    var x = document.createElement('span');\n" +
+        "    x.className = 'x';\n" +
+        "    x.textContent = 'x';\n" +
+        "    x.onclick = function(j, ev) { return function(e) {\n" +
+        "      e.stopPropagation();\n" +
+        "      closeDoc(j);\n" +
+        "    }; }(i);\n" +
+        "    t.appendChild(x);\n" +
+        "    tabsEl.appendChild(t);\n" +
+        "  }\n" +
+        "}\n" +
+        "\n" +
+        "function loadIntoEditor() {\n" +
+        "  var w = document.getElementById('welcome');\n" +
+        "  if (activeDoc < 0) {\n" +
+        "    if (w) w.style.display = 'flex';\n" +
+        "    ta.value = '';\n" +
+        "    hl.textContent = '';\n" +
+        "    gutter.innerHTML = '';\n" +
+        "    return;\n" +
+        "  }\n" +
+        "  if (w) w.style.display = 'none';\n" +
+        "  ta.value = docs[activeDoc].text;\n" +
+        "  ta.scrollTop = 0;\n" +
+        "  renderCrumbs();\n" +
+        "  paint();\n" +
+        "}\n" +
+        "\n" +
+        "async function paint() {\n" +
+        "  if (activeDoc < 0) return;\n" +
+        "  var r = await fetch('/tokenize', {method: 'POST', body: ta.value});\n" +
+        "  var tokens = await r.json();\n" +
+        "  var html = '';\n" +
+        "  errors = 0;\n" +
+        "  var lastEnd = 0;\n" +
+        "  for (var i = 0; i < tokens.length; i++) {\n" +
+        "    var t = tokens[i];\n" +
+        "    if (t.start > lastEnd) html += esc(ta.value.slice(lastEnd, t.start));\n" +
+        "    html += '<span class=\"k-' + t.kind + '\">' + esc(t.text) + '</span>';\n" +
+        "    if (t.kind === 'error') errors++;\n" +
+        "    lastEnd = t.end;\n" +
+        "  }\n" +
+        "  if (lastEnd < ta.value.length) html += esc(ta.value.slice(lastEnd));\n" +
+        "  hl.innerHTML = html;\n" +
+        "  var lines = ta.value.split('\\n').length;\n" +
+        "  var g = '';\n" +
+        "  for (var i = 1; i <= lines; i++) g += '<span data-ln=\"' + i + '\">' + i + '</span>\\n';\n" +
+        "  gutter.innerHTML = g;\n" +
+        "  renderMinimap(tokens);\n" +
+        "  syncScroll();\n" +
+        "  updateStatus();\n" +
+        "}\n" +
+        "\n" +
+        "function renderMinimap(tokens) {\n" +
+        "  var mm = document.getElementById('minimap');\n" +
+        "  if (!mm) return;\n" +
+        "  var text = ta.value;\n" +
+        "  var starts = [0];\n" +
+        "  var idx = text.indexOf('\\n');\n" +
+        "  while (idx >= 0) { starts.push(idx + 1); idx = text.indexOf('\\n', idx + 1); }\n" +
+        "  var colors = { keyword: '#ff79c6', type: '#8be9fd', string: '#f1fa8c', char: '#f1fa8c',\n" +
+        "    number: '#ffb86c', comment: '#3f4a72', error: '#ff5555' };\n" +
+        "  var per = {};\n" +
+        "  var li = 0;\n" +
+        "  for (var i = 0; i < tokens.length; i++) {\n" +
+        "    while (li < starts.length - 1 && tokens[i].start >= starts[li + 1]) li++;\n" +
+        "    var c = colors[tokens[i].kind];\n" +
+        "    if (c && !per[li]) per[li] = c;\n" +
+        "  }\n" +
+        "  var out = '';\n" +
+        "  for (var l = 0; l < starts.length; l++) {\n" +
+        "    var c = per[l] || '#33333c';\n" +
+        "    var w = 40 - (per[l] ? 14 : 0);\n" +
+        "    out += '<div class=\"mm-line\" style=\"top:' + (l * 4) + 'px;width:' + w + 'px;background:' + c + '\"></div>';\n" +
+        "  }\n" +
+        "  mm.innerHTML = out;\n" +
+        "}\n" +
+        "\n" +
+        "function updateStatus() {\n" +
+        "  if (activeDoc < 0) {\n" +
+        "    statusEl.textContent = 'Kof Editor';\n" +
+        "    return;\n" +
+        "  }\n" +
+        "  var doc = docs[activeDoc];\n" +
+        "  var caret = ta.selectionStart;\n" +
+        "  var before = ta.value.slice(0, caret);\n" +
+        "  var line = before.split('\\n').length;\n" +
+        "  var col = caret - before.lastIndexOf('\\n');\n" +
+        "  var lang = nameOf(doc.path).split('.').pop() || 'txt';\n" +
+        "  var gb = window.gitBranch || '';\n" +
+        "  statusEl.innerHTML = '<span>' + doc.path + (doc.dirty ? ' ●' : '') + '</span>' +\n" +
+        "    '<span>' + errors + ' erro(s) — Ln ' + line + ', Col ' + col + ' — UTF-8 — ' + lang +\n" +
+        "    (gb ? ' — ' + gb : '') + '</span>';\n" +
+        "  moveActiveLine(line);\n" +
+        "}\n" +
+        "\n" +
+        "function moveActiveLine(line) {\n" +
+        "  var al = document.getElementById('active-line');\n" +
+        "  if (!al) {\n" +
+        "    al = document.createElement('div');\n" +
+        "    al.id = 'active-line';\n" +
+        "    document.getElementById('codearea').appendChild(al);\n" +
+        "  }\n" +
+        "  var lh = 22.4;\n" +
+        "  al.style.top = (12 + (line - 1) * lh - ta.scrollTop) + 'px';\n" +
+        "  al.style.height = lh + 'px';\n" +
+        "  var g = gutter.querySelectorAll('span');\n" +
+        "  for (var i = 0; i < g.length; i++) g[i].classList.remove('ln-cur');\n" +
+        "  var cur = gutter.querySelector('span[data-ln=\"' + line + '\"]');\n" +
+        "  if (cur) cur.classList.add('ln-cur');\n" +
+        "}\n" +
+        "\n" +
+        "function syncScroll() {\n" +
+        "  gutter.scrollTop = ta.scrollTop;\n" +
+        "  hl.scrollTop = ta.scrollTop;\n" +
+        "  hl.scrollLeft = ta.scrollLeft;\n" +
+        "}\n" +
+        "\n" +
+        "ta.addEventListener('scroll', syncScroll);\n" +
+        "ta.addEventListener('select', updateStatus);\n" +
+        "ta.addEventListener('click', updateStatus);\n" +
+        "ta.addEventListener('keyup', updateStatus);\n" +
+        "ta.addEventListener('input', function() {\n" +
+        "  if (activeDoc >= 0) {\n" +
+        "    docs[activeDoc].text = ta.value;\n" +
+        "    docs[activeDoc].dirty = true;\n" +
+        "    renderTabs();\n" +
+        "  }\n" +
+        "  clearTimeout(timer);\n" +
+        "  timer = setTimeout(paint, 150);\n" +
+        "});\n" +
+        "ta.addEventListener('keydown', function(e) {\n" +
+        "  if (e.key === 'Tab') {\n" +
+        "    e.preventDefault();\n" +
+        "    var s = ta.selectionStart;\n" +
+        "    var v = ta.value;\n" +
+        "    ta.value = v.slice(0, s) + '    ' + v.slice(ta.selectionEnd);\n" +
+        "    ta.selectionStart = ta.selectionEnd = s + 4;\n" +
+        "    docs[activeDoc].text = ta.value;\n" +
+        "    paint();\n" +
+        "  } else if (e.key === 'Enter') {\n" +
+        "    e.preventDefault();\n" +
+        "    var s2 = ta.selectionStart;\n" +
+        "    var lineStart = ta.value.lastIndexOf('\\n', s2 - 1) + 1;\n" +
+        "    var ind = '';\n" +
+        "    var line = ta.value.slice(lineStart, s2);\n" +
+        "    var m = line.match(/^(\\s*)/);\n" +
+        "    if (m) ind = m[1];\n" +
+        "    if (line.trim().endsWith('{')) ind += '    ';\n" +
+        "    ta.value = ta.value.slice(0, s2) + '\\n' + ind + ta.value.slice(ta.selectionEnd);\n" +
+        "    ta.selectionStart = ta.selectionEnd = s2 + 1 + ind.length;\n" +
+        "    docs[activeDoc].text = ta.value;\n" +
+        "    paint();\n" +
+        "  } else if (e.key === 's' && (e.ctrlKey || e.metaKey)) {\n" +
+        "    e.preventDefault();\n" +
+        "    saveDoc();\n" +
+        "  }\n" +
+        "});\n" +
+        "\n" +
+        "async function saveDoc() {\n" +
+        "  if (activeDoc < 0) return;\n" +
+        "  var doc = docs[activeDoc];\n" +
+        "  var r = await fetch('/api/write', {method: 'POST', body: doc.path + '\\n' + doc.text});\n" +
+        "  var ok = await r.text();\n" +
+        "  if (ok === 'ok') {\n" +
+        "    doc.dirty = false;\n" +
+        "    renderTabs();\n" +
+        "    statusEl.innerHTML = '<span>' + doc.path + ' — salvo</span>';\n" +
+        "  } else {\n" +
+        "    statusEl.innerHTML = '<span style=\"color:#ff5555\">falha ao salvar ' + doc.path + '</span>';\n" +
+        "  }\n" +
+        "}\n" +
+        "\n" +
+        "async function openFile(path) {\n" +
+        "  var r = await fetch('/api/read', {method: 'POST', body: path});\n" +
+        "  var text = await r.text();\n" +
+        "  addDoc(path, text);\n" +
+        "}\n" +
+        "\n" +
+        "async function loadDir(dir) {\n" +
+        "  var r = await fetch('/api/dir', {method: 'POST', body: dir});\n" +
+        "  return await r.json();\n" +
+        "}\n" +
+        "\n" +
+        "async function renderTree(dir, el) {\n" +
+        "  var items = await loadDir(dir);\n" +
+        "  el.innerHTML = '';\n" +
+        "  for (var i = 0; i < items.length; i++) {\n" +
+        "    var it = items[i];\n" +
+        "    var div = document.createElement('div');\n" +
+        "    div.className = 'tnode' + (it.dir ? ' tdir' : ' tfile');\n" +
+        "    if (it.dir) {\n" +
+        "      var arrow = document.createElement('span');\n" +
+        "      arrow.className = 'tarrow';\n" +
+        "      arrow.textContent = '▸';\n" +
+        "      div.appendChild(arrow);\n" +
+        "      div.innerHTML += folderIcon();\n" +
+        "      div.appendChild(document.createTextNode(it.name));\n" +
+        "      var child = document.createElement('div');\n" +
+        "      child.className = 'tchildren';\n" +
+        "      child.style.display = 'none';\n" +
+        "      div.onclick = function(c, a, d) { return function(e) {\n" +
+        "        e.stopPropagation();\n" +
+        "        if (d.style.display === 'none') {\n" +
+        "          d.style.display = 'block';\n" +
+        "          a.textContent = '▾';\n" +
+        "          renderTree(c, d);\n" +
+        "        } else {\n" +
+        "          d.style.display = 'none';\n" +
+        "          a.textContent = '▸';\n" +
+        "        }\n" +
+        "      }; }(dir + '/' + it.name, arrow, child);\n" +
+        "      el.appendChild(div);\n" +
+        "      el.appendChild(child);\n" +
+        "    } else {\n" +
+        "      div.innerHTML = fileIcon(it.name);\n" +
+        "      div.appendChild(document.createTextNode(it.name));\n" +
+        "      div.onclick = function(p) { return function() {\n" +
+        "        openFile(p);\n" +
+        "      }; }(dir + '/' + it.name);\n" +
+        "      el.appendChild(div);\n" +
+        "    }\n" +
+        "  }\n" +
+        "}\n" +
+        "\n" +
+        "function setView(v) {\n" +
+        "  var btns = document.querySelectorAll('.abtn');\n" +
+        "  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');\n" +
+        "  var b = document.querySelector('.abtn[data-view=\"' + v + '\"]');\n" +
+        "  if (b) b.classList.add('active');\n" +
+        "  document.getElementById('gitpanel').style.display = v == 'git' ? 'block' : 'none';\n" +
+        "  if (v == 'git') { showPanel('git'); return; }\n" +
+        "  document.getElementById('dirbar').style.display = v == 'explorer' ? 'flex' : 'none';\n" +
+        "  document.getElementById('searchbar').style.display = v == 'search' ? 'flex' : 'none';\n" +
+        "  var sr = document.getElementById('searchresults');\n" +
+        "  sr.style.display = (v == 'search' && sr.children.length > 0) ? 'block' : 'none';\n" +
+        "  document.getElementById('tree').style.display = v == 'explorer' ? 'block' : 'none';\n" +
+        "  if (v == 'search') document.getElementById('searchinput').focus();\n" +
+        "}\n" +
+        "var abtns = document.querySelectorAll('.abtn');\n" +
+        "for (var i = 0; i < abtns.length; i++) (function(b) {\n" +
+        "  b.onclick = function() { setView(b.getAttribute('data-view')); };\n" +
+        "})(abtns[i]);\n" +
+        "function loadGit(dir) {\n" +
+        "  fetch('/api/git', {method: 'POST', body: dir}).then(function(r) { return r.text(); }).then(function(branch) {\n" +
+        "    var b = branch.trim();\n" +
+        "    document.getElementById('gitbranch').textContent = b ? b : 'não é um repositório git';\n" +
+        "    window.gitBranch = b;\n" +
+        "    updateStatus();\n" +
+        "    loadGitStatus();\n" +
+        "  }).catch(function() { document.getElementById('gitbranch').textContent = '—'; });\n" +
+        "}\n" +
+        "function loadGitStatus() {\n" +
+        "  fetch('/api/gitstatus', {method: 'POST', body: ''}).then(function(r) { return r.text(); }).then(function(txt) {\n" +
+        "    var gl = document.getElementById('gitlist');\n" +
+        "    var lines = txt.split('\\n');\n" +
+        "    var html = '';\n" +
+        "    for (var i = 0; i < lines.length; i++) {\n" +
+        "      if (!lines[i].trim()) continue;\n" +
+        "      var st = lines[i].slice(0, 2);\n" +
+        "      var f = lines[i].slice(3);\n" +
+        "      var color = st.indexOf('M') >= 0 || st.indexOf('A') >= 0 || st.indexOf('D') >= 0 ? 'var(--k-string)' : 'var(--muted)';\n" +
+        "      html += '<div class=\"panel-row gitfile\" data-f=\"' + f + '\" style=\"color:' + color + ';cursor:pointer\"><span style=\"width:16px;display:inline-block\">' + st.trim() + '</span>' + esc(f) + '</div>';\n" +
+        "    }\n" +
+        "    gl.innerHTML = html || '<div class=\"panel-row muted\">working tree limpo</div>';\n" +
+        "    var rows = gl.querySelectorAll('.gitfile');\n" +
+        "    for (var i = 0; i < rows.length; i++) (function(r) {\n" +
+        "      r.onclick = function() { showDiff(r.getAttribute('data-f')); };\n" +
+        "    })(rows[i]);\n" +
+        "  }).catch(function() {});\n" +
+        "}\n" +
+        "async function showDiff(file) {\n" +
+        "  var r = await fetch('/api/gitdiff', {method: 'POST', body: file});\n" +
+        "  var d = await r.text();\n" +
+        "  addDoc(file ? file + ' (diff)' : 'git diff', d);\n" +
+        "}\n" +
+        "document.getElementById('git-commit-btn').onclick = function() {\n" +
+        "  var msg = prompt('Mensagem do commit:');\n" +
+        "  if (!msg) return;\n" +
+        "  fetch('/api/gitcommit', {method: 'POST', body: msg}).then(function(r) { return r.text(); }).then(function(out) {\n" +
+        "    loadGitStatus();\n" +
+        "    showDiff('');\n" +
+        "    statusEl.innerHTML = '<span>git: ' + out.trim() + '</span>';\n" +
+        "  });\n" +
+        "}\n" +
+        "document.getElementById('git-diff-btn').onclick = function() { showDiff(''); };\n" +
+        "  }).catch(function() {});\n" +
+        "}\n" +
+        "document.getElementById('dirbtn').onclick = function() {\n" +
+        "  var dir = dirInput.value || '.';\n" +
+        "  loadGit(dir);\n" +
+        "  renderTree(dir, tree);\n" +
+        "};\n" +
+        "dirInput.addEventListener('keydown', function(e) {\n" +
+        "  if (e.key === 'Enter') renderTree(dirInput.value || '.', tree);\n" +
+        "});\n" +
+        "\n" +
+        "var currentDir = '';\n" +
+        "function loadFolders() {\n" +
+        "  try { return JSON.parse(localStorage.getItem('kof.folders') || '[]'); } catch (e) { return []; }\n" +
+        "}\n" +
+        "function saveFolder(dir) {\n" +
+        "  var f = loadFolders().filter(function(x) { return x !== dir; });\n" +
+        "  f.unshift(dir);\n" +
+        "  if (f.length > 10) f = f.slice(0, 10);\n" +
+        "  localStorage.setItem('kof.folders', JSON.stringify(f));\n" +
+        "}\n" +
+        "function renderWelcome() {\n" +
+        "  currentDir = '';\n" +
+        "  tree.innerHTML = '';\n" +
+        "  var msg = document.createElement('div');\n" +
+        "  msg.className = 'tnode tdir';\n" +
+        "  msg.textContent = 'Kof Editor — nenhuma pasta aberta';\n" +
+        "  tree.appendChild(msg);\n" +
+        "  var recents = loadFolders();\n" +
+        "  for (var i = 0; i < recents.length; i++) {\n" +
+        "    var d = document.createElement('div');\n" +
+        "    d.className = 'tnode';\n" +
+        "    d.textContent = '📂 ' + recents[i];\n" +
+        "    d.onclick = function(p) { return function() { openFolder(p); }; }(recents[i]);\n" +
+        "    tree.appendChild(d);\n" +
+        "  }\n" +
+        "  statusEl.innerHTML = '<span>sem pasta — Arquivo > Abrir pasta</span>';\n" +
+        "}\n" +
+        "function openFolder(dir) {\n" +
+        "  dirInput.value = dir;\n" +
+        "  currentDir = dir;\n" +
+        "  saveFolder(dir);\n" +
+        "  loadGit(dir);\n" +
+        "  renderTree(dir, tree);\n" +
+        "  statusEl.innerHTML = '<span>' + dir + '</span><span>pasta aberta</span>';\n" +
+        "}\n" +
+        "document.getElementById('mi-open').onclick = function() {\n" +
+        "  var p = prompt('Caminho da pasta:', currentDir);\n" +
+        "  if (p) openFolder(p);\n" +
+        "};\n" +
+        "document.getElementById('mi-recent').onclick = function() {\n" +
+        "  var f = loadFolders();\n" +
+        "  if (f.length === 0) { statusEl.textContent = 'sem pastas recentes'; return; }\n" +
+        "  var pick = prompt('Pastas recentes:\\n' + f.join('\\n'), f[0]);\n" +
+        "  if (pick) openFolder(pick.trim());\n" +
+        "};\n" +
+        "function envInfo() {\n" +
+        "  var q = {};\n" +
+        "  location.search.replace(/[?&]([^=&]+)=([^&]*)/g, function(m, k, v) { q[k] = decodeURIComponent(v); });\n" +
+        "  return { user: q.user || 'usuario', host: q.host || 'maquina', year: new Date().getFullYear() };\n" +
+        "}\n" +
+        "var ENV = envInfo();\n" +
+        "function license() {\n" +
+        "  return 'Copyright ' + ENV.year + ' ' + ENV.user + ' <' + ENV.user + '@' + ENV.host + '>' +\n" +
+        "    '\\n' +\n" +
+        "    'This program is free software; you can redistribute it and/or modify' +\n" +
+        "    ' it under the terms of the GNU General Public License as published by' +\n" +
+        "    ' the Free Software Foundation; either version 2 of the License, or' +\n" +
+        "    ' (at your option) any later version.';\n" +
+        "}\n" +
+        "var TEMPLATES = {\n" +
+        "  kof: '// novo.kf\\n//\\n// ' + license() + '\\n//\\n\\nrecord Point(Int x, Int y)\\n\\nmain() {\\n' +\n" +
+        "    '    var p = new Point(3, 7)\\n    println(\"ponto: \" + p.x() + \",\" + p.y())\\n}\\n',\n" +
+        "  java: '/*\\n * novo.java\\n *\\n * ' + license() + '\\n */\\n\\npublic class Novo {\\n' +\n" +
+        "    '    public static void main(String[] args) {\\n        System.out.println(\"Olá, Kof!\");\\n    }\\n}\\n',\n" +
+        "  c: '/*\\n * novo.c\\n *\\n * ' + license() + '\\n */\\n\\n#include <stdio.h>\\n\\nint main(void) {\\n' +\n" +
+        "    '    printf(\"olá, kof!\\n\");\\n    return 0;\\n}\\n',\n" +
+        "  python: '#!/usr/bin/env python3\\n# novo.py\\n#\\n# ' + license() + '\\n\\ndef main():\\n' +\n" +
+        "    '    print(\"olá, kof!\")\\n\\nif __name__ == \"__main__\":\\n    main()\\n',\n" +
+        "  javascript: '// novo.js\\n//\\n// ' + license() + '\\n\\nconsole.log(\"olá, kof!\");\\n',\n" +
+        "  json: '{\\n  \"nome\": \"kof\",\\n  \"versao\": 1,\\n  \"targets\": [\"jvm\", \"native\", \"web\"]\\n}\\n',\n" +
+        "  html: '<!DOCTYPE html>\\n<html>\\n<head>\\n  <meta charset=\"utf-8\">\\n  <title>novo</title>\\n</head>\\n' +\n" +
+        "    '<body>\\n  <h1>Kof</h1>\\n</body>\\n</html>\\n',\n" +
+        "  markdown: '# novo.md\\n\\n> ' + ENV.user + '@' + ENV.host + '\\n',\n" +
+        "  shell: '#!/usr/bin/env bash\\n# novo.sh\\n#\\n# ' + license() + '\\n\\necho \"olá, kof!\"\\n'\n" +
+        "};\n" +
+        "document.getElementById('mi-blank').onclick = function() { addDoc('novo.kf', ''); };\n" +
+        "var tpls = document.querySelectorAll('.tpl');\n" +
+        "for (var ti = 0; ti < tpls.length; ti++) {\n" +
+        "  tpls[ti].onclick = function() {\n" +
+        "    var l = this.getAttribute('data-lang');\n" +
+        "    var name = 'novo.' + (l === 'javascript' ? 'js' : l === 'markdown' ? 'md' : l);\n" +
+        "    addDoc(name, TEMPLATES[l]);\n" +
+        "  };\n" +
+        "}\n" +
+        "document.getElementById('mi-theme').onclick = toggleTheme;\n" +
+        "\n" +
+        "// abrir arquivo via ?open=/caminho/arquivo.kf (launcher/mimetype)\n" +
+        "var openParam = '';\n" +
+        "location.search.replace(/[?&]open=([^&]*)/, function(m, v) { openParam = decodeURIComponent(v); });\n" +
+        "if (openParam) {\n" +
+        "  openFile(openParam);\n" +
+        "}\n" +
+        "\n" +
+        "renderWelcome();\n" +
+        "\n" +
+        "// ---- atalhos ----\n" +
+        "var problems = document.createElement('div');\n" +
+        "problems.id = 'problems';\n" +
+        "document.body.insertBefore(problems, document.getElementById('status'));\n" +
+        "\n" +
+        "async function applyTheme() {\n" +
+        "  var r = await fetch('/api/theme', {method: 'POST', body: themeIdx});\n" +
+        "  var t = await r.json();\n" +
+        "  function rgb(v) {\n" +
+        "    var p = v.split(';');\n" +
+        "    return 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')';\n" +
+        "  }\n" +
+        "  var vars = {\n" +
+        "    '--editor': rgb(t.bg), '--fg': rgb(t.fg), '--sidebar': rgb(t.header),\n" +
+        "    '--panel': rgb(t.header), '--border': rgb(t.selection), '--hover': rgb(t.selection),\n" +
+        "    '--sel': rgb(t.selection), '--gutter': rgb(t.gutter),\n" +
+        "    '--k-keyword': rgb(t.keyword), '--k-type': rgb(t.type),\n" +
+        "    '--k-string': rgb(t.string), '--k-number': rgb(t.number),\n" +
+        "    '--k-comment': rgb(t.comment), '--k-error': rgb(t.error),\n" +
+        "    '--muted': rgb(t.comment), '--accent': rgb(t.type)\n" +
+        "  };\n" +
+        "  for (var k in vars) document.documentElement.style.setProperty(k, vars[k]);\n" +
+        "}\n" +
+        "var themeIdx = '0';\n" +
+        "applyTheme();\n" +
+        "\n" +
+        "function toggleTheme() {\n" +
+        "  themeIdx = themeIdx === '0' ? '1' : '0';\n" +
+        "  applyTheme();\n" +
+        "}\n" +
+        "\n" +
+        "async function showQuickOpen() {\n" +
+        "  var dir = dirInput.value || '.';\n" +
+        "  var r = await fetch('/api/listall', {method: 'POST', body: dir});\n" +
+        "  var files = await r.json();\n" +
+        "  var q = prompt('Abrir arquivo (nome contém):', '');\n" +
+        "  if (q === null) return;\n" +
+        "  var matches = [];\n" +
+        "  for (var i = 0; i < files.length; i++) {\n" +
+        "    if (files[i].toLowerCase().indexOf(q.toLowerCase()) >= 0) matches.push(files[i]);\n" +
+        "  }\n" +
+        "  if (matches.length === 0) {\n" +
+        "    statusEl.textContent = 'nenhum arquivo';\n" +
+        "    return;\n" +
+        "  }\n" +
+        "  var pick = prompt('Arquivos:\\n' + matches.slice(0, 12).join('\\n'), matches[0]);\n" +
+        "  if (pick) openFile(dir + '/' + pick.trim());\n" +
+        "}\n" +
+        "\n" +
+        "function showProblems() {\n" +
+        "  showPanel('problems');\n" +
+        "  refreshProblems();\n" +
+        "}\n" +
+        "\n" +
+        "async function refreshProblems() {\n" +
+        "  if (activeDoc < 0) return;\n" +
+        "  var r = await fetch('/api/diags', {method: 'POST', body: ta.value});\n" +
+        "  var diags = await r.json();\n" +
+        "  problems.innerHTML = '';\n" +
+        "  for (var i = 0; i < diags.length; i++) {\n" +
+        "    var p = document.createElement('div');\n" +
+        "    p.className = 'p';\n" +
+        "    p.textContent = 'linha ' + diags[i].line + ', col ' + diags[i].col + ' — \\'' + diags[i].text + '\\'';\n" +
+        "    p.onclick = function(d) { return function() {\n" +
+        "      var lines = ta.value.split('\\n');\n" +
+        "      var pos = 0;\n" +
+        "      for (var l = 0; l < d.line - 1 && l < lines.length; l++) pos += lines[l].length + 1;\n" +
+        "      ta.focus();\n" +
+        "      ta.setSelectionRange(pos, pos);\n" +
+        "    }; }(diags[i]);\n" +
+        "    problems.appendChild(p);\n" +
+        "  }\n" +
+        "}\n" +
+        "\n" +
+        "var fontScale = 14;\n" +
+        "function zoom(d) {\n" +
+        "  fontScale = Math.max(8, Math.min(28, fontScale + d));\n" +
+        "  hl.style.fontSize = fontScale + 'px';\n" +
+        "  ta.style.fontSize = fontScale + 'px';\n" +
+        "  gutter.style.fontSize = fontScale + 'px';\n" +
+        "}\n" +
+        "\n" +
+        "// ---- busca na pasta ----\n" +
+        "document.getElementById('searchbtn').onclick = runSearch;\n" +
+        "document.getElementById('searchinput').addEventListener('keydown', function(e) {\n" +
+        "  if (e.key === 'Enter') runSearch();\n" +
+        "});\n" +
+        "async function runSearch() {\n" +
+        "  var term = document.getElementById('searchinput').value;\n" +
+        "  var dir = currentDir || '.';\n" +
+        "  var res = document.getElementById('searchresults');\n" +
+        "  if (!term) { res.style.display = 'none'; return; }\n" +
+        "  var r = await fetch('/api/search', {method: 'POST', body: dir + '\\n' + term});\n" +
+        "  var files = await r.json();\n" +
+        "  res.innerHTML = '';\n" +
+        "  var count = 0;\n" +
+        "  for (var fi = 0; fi < files.length; fi++) {\n" +
+        "    var f = files[fi];\n" +
+        "    for (var mi = 0; mi < f.matches.length; mi++) {\n" +
+        "      var m = f.matches[mi];\n" +
+        "      var d = document.createElement('div');\n" +
+        "      d.className = 'sr';\n" +
+        "      d.innerHTML = f.file + ': <b>' + m.line + ':' + m.col + '</b>' ;\n" +
+        "      d.onclick = (function(file, line) { return function() {\n" +
+        "        openFile(dir + '/' + file);\n" +
+        "        setTimeout(function() {\n" +
+        "          var lines = ta.value.split('\\n');\n" +
+        "          var pos = 0;\n" +
+        "          for (var l = 0; l < line - 1 && l < lines.length; l++) pos += lines[l].length + 1;\n" +
+        "          ta.focus();\n" +
+        "          ta.setSelectionRange(pos, pos);\n" +
+        "        }, 300);\n" +
+        "      }; })(f.file, m.line);\n" +
+        "      res.appendChild(d);\n" +
+        "      count++;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  res.style.display = count ? 'block' : 'none';\n" +
+        "  statusEl.innerHTML = '<span>' + count + ' resultado(s) para \\'' + term + '\\'</span>';\n" +
+        "}\n" +
+        "\n" +
+        "// ---- breadcrumbs ----\n" +
+        "function renderCrumbs() {\n" +
+        "  var cr = document.getElementById('crumbs');\n" +
+        "  if (activeDoc < 0) { cr.textContent = ''; return; }\n" +
+        "  var parts = docs[activeDoc].path.split('/');\n" +
+        "  cr.innerHTML = '';\n" +
+        "  for (var i = 0; i < parts.length - 1; i++) {\n" +
+        "    var s = document.createElement('span');\n" +
+        "    s.textContent = parts[i] + ' ▸ ';\n" +
+        "    cr.appendChild(s);\n" +
+        "  }\n" +
+        "  var last = document.createElement('b');\n" +
+        "  last.textContent = parts[parts.length - 1];\n" +
+        "  cr.appendChild(last);\n" +
+        "}\n" +
+        "\n" +
+        "// ---- paleta de comandos ----\n" +
+        "var COMMANDS = [\n" +
+        "  { label: 'Novo em branco', run: function() { addDoc('novo.kf', ''); } },\n" +
+        "  { label: 'Novo Kof (template)', run: function() { addDoc('novo.kf', TEMPLATES.kof); } },\n" +
+        "  { label: 'Abrir pasta...', run: function() { document.getElementById('mi-open').onclick(); } },\n" +
+        "  { label: 'Pastas recentes', run: function() { document.getElementById('mi-recent').onclick(); } },\n" +
+        "  { label: 'Salvar (Ctrl+S)', run: saveDoc },\n" +
+        "  { label: 'Fechar aba (Ctrl+W)', run: function() { if (activeDoc >= 0) closeDoc(activeDoc); } },\n" +
+        "  { label: 'Problemas (Ctrl+Shift+M)', run: function() { showProblems(); refreshProblems(); } },\n" +
+        "  { label: 'Buscar na pasta', run: function() { document.getElementById('searchinput').focus(); } },\n" +
+        "  { label: 'Alternar tema', run: toggleTheme },\n" +
+        "  { label: 'Zoom +', run: function() { zoom(1); } },\n" +
+        "  { label: 'Zoom -', run: function() { zoom(-1); } },\n" +
+        "  { label: 'Inserir snippet: foreach', run: function() { insertSnippet('for (var i = 0; i < n; i++) {\\n\\t\\n}'); } },\n" +
+        "  { label: 'Inserir snippet: if', run: function() { insertSnippet('if (cond) {\\n\\t\\n}'); } },\n" +
+        "  { label: 'Inserir snippet: fun', run: function() { insertSnippet('fun nome(args): String {\\n\\treturn \"\"\\n}'); } },\n" +
+        "  { label: 'Inserir snippet: class', run: function() { insertSnippet('class Nome {\\n\\t\\n}'); } },\n" +
+        "  { label: 'Inserir snippet: while', run: function() { insertSnippet('while (cond) {\\n\\t\\n}'); } }\n" +
+        "];\n" +
+        "\n" +
+        "function insertSnippet(s) {\n" +
+        "  if (activeDoc < 0) { addDoc('novo.kf', ''); }\n" +
+        "  ta.focus();\n" +
+        "  var pos = ta.selectionStart;\n" +
+        "  var before = ta.value.slice(0, pos);\n" +
+        "  var lastNl = before.lastIndexOf('\\n');\n" +
+        "  var indent = lastNl >= 0 ? before.slice(lastNl + 1).match(/^\\s*/)[0] : '';\n" +
+        "  s = s.replace(/\\n/g, '\\n' + indent);\n" +
+        "  ta.value = before + s + ta.value.slice(ta.selectionEnd);\n" +
+        "  var doc = docs[activeDoc];\n" +
+        "  doc.text = ta.value;\n" +
+        "  doc.dirty = true;\n" +
+        "  ta.selectionStart = ta.selectionEnd = pos + s.length;\n" +
+        "  paint();\n" +
+        "  renderTabs();\n" +
+        "}\n" +
+        "function showPalette() {\n" +
+        "  var overlay = document.getElementById('palette');\n" +
+        "  if (!overlay) {\n" +
+        "    overlay = document.createElement('div');\n" +
+        "    overlay.id = 'palette';\n" +
+        "    overlay.innerHTML = '<input id=\"palette-input\" placeholder=\"comando...\"><div id=\"palette-list\"></div>';\n" +
+        "    document.body.appendChild(overlay);\n" +
+        "  }\n" +
+        "  overlay.style.display = 'block';\n" +
+        "  var input = document.getElementById('palette-input');\n" +
+        "  var list = document.getElementById('palette-list');\n" +
+        "  input.value = '';\n" +
+        "  input.focus();\n" +
+        "  function render(q) {\n" +
+        "    list.innerHTML = '';\n" +
+        "    var shown = [];\n" +
+        "    for (var i = 0; i < COMMANDS.length; i++) {\n" +
+        "      if (COMMANDS[i].label.toLowerCase().indexOf(q.toLowerCase()) >= 0) shown.push(i);\n" +
+        "    }\n" +
+        "    for (var j = 0; j < shown.length; j++) {\n" +
+        "      var d = document.createElement('div');\n" +
+        "      d.className = 'pc';\n" +
+        "      d.textContent = COMMANDS[shown[j]].label;\n" +
+        "      d.onclick = (function(idx) { return function() {\n" +
+        "        overlay.style.display = 'none';\n" +
+        "        COMMANDS[idx].run();\n" +
+        "      }; })(shown[j]);\n" +
+        "      list.appendChild(d);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  input.oninput = function() { render(input.value); };\n" +
+        "  input.onkeydown = function(e) {\n" +
+        "    if (e.key === 'Escape') overlay.style.display = 'none';\n" +
+        "    if (e.key === 'Enter') {\n" +
+        "      var first = list.querySelector('.pc');\n" +
+        "      if (first) { overlay.style.display = 'none'; COMMANDS[shownIndex(first, input.value)]().run ? first.click() : null; }\n" +
+        "    }\n" +
+        "  };\n" +
+        "  render('');\n" +
+        "}\n" +
+        "function shownIndex(el) { return parseInt(el.getAttribute('data-i')); }\n" +
+        "\n" +
+        "async function showSymbols() {\n" +
+        "  if (activeDoc < 0) return;\n" +
+        "  var r = await fetch('/api/outline', {method: 'POST', body: ta.value});\n" +
+        "  var syms = await r.json();\n" +
+        "  var overlay = document.getElementById('palette');\n" +
+        "  overlay.style.display = 'block';\n" +
+        "  var input = document.getElementById('palette-input');\n" +
+        "  var list = document.getElementById('palette-list');\n" +
+        "  input.value = '@';\n" +
+        "  input.focus();\n" +
+        "  function render(q) {\n" +
+        "    list.innerHTML = '';\n" +
+        "    for (var i = 0; i < syms.length; i++) {\n" +
+        "      if (syms[i].name.toLowerCase().indexOf(q.toLowerCase()) >= 0) {\n" +
+        "        var d = document.createElement('div');\n" +
+        "        d.className = 'pc';\n" +
+        "        d.innerHTML = '<span class=\"' + syms[i].kind + '\">' + syms[i].name + '</span>';\n" +
+        "        list.appendChild(d);\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  input.oninput = function() { render(input.value); };\n" +
+        "  render('');\n" +
+        "}\n" +
+        "\n" +
+        "document.addEventListener('keydown', function(e) {\n" +
+        "  var ctrl = e.ctrlKey || e.metaKey;\n" +
+        "  if (ctrl && e.key === 'p' && e.shiftKey) {\n" +
+        "    e.preventDefault();\n" +
+        "    showPalette();\n" +
+        "  } else if (ctrl && e.key === 'o' && e.shiftKey) {\n" +
+        "    e.preventDefault();\n" +
+        "    showSymbols();\n" +
+                "  } else if (ctrl && e.key === 'p') {\n" +
+        "    e.preventDefault();\n" +
+        "    showQuickOpen();\n" +
+        "  } else if (ctrl && e.key === 'w') {\n" +
+        "    e.preventDefault();\n" +
+        "    if (activeDoc >= 0) closeDoc(activeDoc);\n" +
+        "  } else if (ctrl && e.key === 'Tab') {\n" +
+        "    e.preventDefault();\n" +
+        "    if (docs.length > 0) {\n" +
+        "      activeDoc = (activeDoc + 1) % docs.length;\n" +
+        "      renderTabs();\n" +
+        "      loadIntoEditor();\n" +
+        "    }\n" +
+        "  } else if (ctrl && e.key === 'm' && e.shiftKey) {\n" +
+        "    e.preventDefault();\n" +
+        "    showProblems();\n" +
+        "    refreshProblems();\n" +
+        "  } else if (ctrl && e.key === '`') {\n" +
+        "    e.preventDefault();\n" +
+        "    togglePanel();\n" +
+        "  } else if (ctrl && e.key === '=') {\n" +
+        "    e.preventDefault();\n" +
+        "    zoom(1);\n" +
+        "  } else if (ctrl && e.key === '-') {\n" +
+        "    e.preventDefault();\n" +
+        "    zoom(-1);\n" +
+        "  }\n" +
+        "});\n" +
+        "\n" +
+        "var statusRight = document.createElement('span');\n" +
+        "statusRight.innerHTML = '<span class=\"click\" onclick=\"toggleTheme()\">tema</span>';\n" +
+        "statusEl.appendChild(statusRight);\n" +
+        "\n" +
+        "var oldPaint = paint;\n" +
+        "paint = async function() {\n" +
+        "  await oldPaint();\n" +
+        "  refreshProblems();\n" +
+        "};\n" +
+        "\n" +
+        "statusEl.textContent = 'Kof Editor — clique num arquivo';\n" +
+        "\n" +
+        "// ---- panel inferior (PROBLEMS/OUTPUT/TERMINAL/GIT) ----\n" +
+        "function showPanel(p) {\n" +
+        "  var panel = document.getElementById('panel');\n" +
+        "  panel.style.display = 'flex';\n" +
+        "  var tabs = document.querySelectorAll('.ptab');\n" +
+        "  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');\n" +
+        "  var id = 'ptab-' + p;\n" +
+        "  var tab = document.getElementById(id);\n" +
+        "  if (tab) tab.classList.add('active');\n" +
+        "  var bodies = ['problems', 'output', 'terminal', 'gitpanel-body'];\n" +
+        "  for (var i = 0; i < bodies.length; i++) {\n" +
+        "    var b = document.getElementById(bodies[i]);\n" +
+        "    if (b) b.style.display = bodies[i] == 'problems' && p == 'problems' ? 'block' :\n" +
+        "      (bodies[i] == p ? 'block' : 'none');\n" +
+        "  }\n" +
+        "  if (p == 'git') refreshGit();\n" +
+        "  if (p == 'terminal') document.getElementById('term-input').focus();\n" +
+        "}\n" +
+        "var ptabs = document.querySelectorAll('.ptab');\n" +
+        "for (var i = 0; i < ptabs.length; i++) (function(t) {\n" +
+        "  t.onclick = function() { showPanel(t.getAttribute('data-panel')); };\n" +
+        "})(ptabs[i]);\n" +
+        "document.getElementById('panel-close').onclick = function() {\n" +
+        "  document.getElementById('panel').style.display = 'none';\n" +
+        "};\n" +
+        "\n" +
+        "// ---- divisórias arrastáveis ----\n" +
+        "var side = document.getElementById('sidebar');\n" +
+        "var sideGrip = document.getElementById('side-grip');\n" +
+        "sideGrip.addEventListener('mousedown', function(e) {\n" +
+        "  e.preventDefault();\n" +
+        "  sideGrip.classList.add('dragging');\n" +
+        "  function mv(ev) {\n" +
+        "    var w = ev.clientX - side.getBoundingClientRect().left;\n" +
+        "    side.style.width = Math.max(180, Math.min(480, w)) + 'px';\n" +
+        "  }\n" +
+        "  function up() {\n" +
+        "    sideGrip.classList.remove('dragging');\n" +
+        "    document.removeEventListener('mousemove', mv);\n" +
+        "    document.removeEventListener('mouseup', up);\n" +
+        "  }\n" +
+        "  document.addEventListener('mousemove', mv);\n" +
+        "  document.addEventListener('mouseup', up);\n" +
+        "});\n" +
+        "var panelEl = document.getElementById('panel');\n" +
+        "var panelGrip = document.getElementById('panel-grip');\n" +
+        "panelGrip.addEventListener('mousedown', function(e) {\n" +
+        "  e.preventDefault();\n" +
+        "  panelGrip.classList.add('dragging');\n" +
+        "  function mv(ev) {\n" +
+        "    var h = window.innerHeight - ev.clientY - 22;\n" +
+        "    panelEl.style.height = Math.max(100, Math.min(window.innerHeight * 0.7, h)) + 'px';\n" +
+        "  }\n" +
+        "  function up() {\n" +
+        "    panelGrip.classList.remove('dragging');\n" +
+        "    document.removeEventListener('mousemove', mv);\n" +
+        "    document.removeEventListener('mouseup', up);\n" +
+        "  }\n" +
+        "  document.addEventListener('mousemove', mv);\n" +
+        "  document.addEventListener('mouseup', up);\n" +
+        "});\n" +
+        "function togglePanel() {\n" +
+        "  var p = document.getElementById('panel');\n" +
+        "  if (p.style.display === 'none') { showPanel('terminal'); } else { p.style.display = 'none'; }\n" +
+        "}\n" +
+        "\n" +
+        "// ---- terminal integrado (Ctrl+`) ----\n" +
+        "var termOut = document.getElementById('term-out');\n" +
+        "function termPrint(text, cls) {\n" +
+        "  var s = document.createElement('span');\n" +
+        "  if (cls) s.className = cls;\n" +
+        "  s.textContent = text;\n" +
+        "  termOut.appendChild(s);\n" +
+        "  termOut.scrollTop = termOut.scrollHeight;\n" +
+        "}\n" +
+        "async function runTerm(cmd) {\n" +
+        "  termPrint('$ ' + cmd + '\\n');\n" +
+        "  var r = await fetch('/api/exec', {method: 'POST', body: cmd});\n" +
+        "  var j = await r.json();\n" +
+        "  if (j.stdout) termPrint(j.stdout);\n" +
+        "  if (j.stderr) termPrint(j.stderr, 'te');\n" +
+        "  termPrint('\\n[exit ' + j.exitCode + ']\\n');\n" +
+        "}\n" +
+        "document.getElementById('term-input').addEventListener('keydown', function(e) {\n" +
+        "  if (e.key === 'Enter') {\n" +
+        "    var cmd = this.value;\n" +
+        "    this.value = '';\n" +
+        "    if (cmd.trim()) runTerm(cmd);\n" +
+        "  }\n" +
+        "});\n" +
+        "\n" +
+        "// ---- git: status / commit / diff (processos reais via F4) ----\n" +
+        "async function gitCmd(cmd) {\n" +
+        "  var r = await fetch('/api/gitcmd', {method: 'POST', body: cmd});\n" +
+        "  return await r.json();\n" +
+        "}\n" +
+        "function gitFileStatus(code) {\n" +
+        "  if (code == 'M') return 'gm';\n" +
+        "  if (code == 'D') return 'gd';\n" +
+        "  return 'gu';\n" +
+        "}\n" +
+        "async function refreshGit() {\n" +
+        "  var box = document.getElementById('gitpanel-body');\n" +
+        "  var dir = currentDir || '.';\n" +
+        "  box.innerHTML = '';\n" +
+        "  var st = await gitCmd('cd ' + dir + ' 2>/dev/null; git status --porcelain 2>&1');\n" +
+        "  if (st.exitCode != 0) {\n" +
+        "    var e = document.createElement('div');\n" +
+        "    e.className = 'grow';\n" +
+        "    e.textContent = st.stdout.trim() || 'não é um repositório git';\n" +
+        "    box.appendChild(e);\n" +
+        "    return;\n" +
+        "  }\n" +
+        "  var lines = st.stdout.split('\\n').filter(function(l) { return l.trim(); });\n" +
+        "  var head = document.createElement('div');\n" +
+        "  head.id = 'git-head';\n" +
+        "  var ci = document.createElement('input');\n" +
+        "  ci.id = 'git-commit-input';\n" +
+        "  ci.placeholder = 'mensagem do commit';\n" +
+        "  var cb = document.createElement('button');\n" +
+        "  cb.className = 'gbtn';\n" +
+        "  cb.textContent = 'commit';\n" +
+        "  cb.onclick = async function() {\n" +
+        "    var msg = ci.value.trim();\n" +
+        "    if (!msg) return;\n" +
+        "    await gitCmd('cd ' + dir + ' && git add -A && git commit -m ' + JSON.stringify(msg));\n" +
+        "    ci.value = '';\n" +
+        "    refreshGit();\n" +
+        "  };\n" +
+        "  head.appendChild(ci);\n" +
+        "  head.appendChild(cb);\n" +
+        "  box.appendChild(head);\n" +
+        "  for (var i = 0; i < lines.length; i++) {\n" +
+        "    var code = lines[i].substring(0, 1);\n" +
+        "    var file = lines[i].substring(3);\n" +
+        "    var row = document.createElement('div');\n" +
+        "    row.className = 'grow';\n" +
+        "    var mark = document.createElement('span');\n" +
+        "    mark.className = gitFileStatus(code);\n" +
+        "    mark.textContent = code + ' ';\n" +
+        "    row.appendChild(mark);\n" +
+        "    var f = document.createTextNode(file);\n" +
+        "    row.appendChild(f);\n" +
+        "    row.onclick = (function(fname) { return async function() {\n" +
+        "      var d = await gitCmd('cd ' + dir + ' && git diff -- ' + fname + ' 2>&1');\n" +
+        "      var out = document.getElementById('output');\n" +
+        "      out.textContent = d.stdout;\n" +
+        "      showPanel('output');\n" +
+        "    }; })(file);\n" +
+        "    box.appendChild(row);\n" +
+        "  }\n" +
+        "}\n" +
+        "\n" +
+        "// ---- símbolos no documento ativo (Ctrl+Shift+O) ----\n" +
+        "function docSymbols() {\n" +
+        "  if (activeDoc < 0) return [];\n" +
+        "  var lines = ta.value.split('\\n');\n" +
+        "  var out = [];\n" +
+        "  for (var i = 0; i < lines.length; i++) {\n" +
+        "    var t = lines[i].trim();\n" +
+        "    var m = t.match(/^(class|record|interface|fun)\\s+([A-Za-z_][A-Za-z0-9_]*)/);\n" +
+        "    if (m) { out.push({label: m[1] + ' ' + m[2], line: i + 1, kind: m[1]}); continue; }\n" +
+        "    m = t.match(/^([A-Za-z_][A-Za-z0-9_]*)\\([^)]*\\)\\s*(:([A-Za-z0-9_<>\\[\\], ]+))?\\s*\\{?$/);\n" +
+        "    if (m) out.push({label: m[1] + '(...)' + (m[2] || ''), line: i + 1, kind: 'fn'});\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}\n" +
+        "\n" +
+        "// ---- autocomplete (Ctrl+Space) ----\n" +
+        "function completeAt() {\n" +
+        "  var before = ta.value.slice(0, ta.selectionStart);\n" +
+        "  var m = before.match(/[A-Za-z_][A-Za-z0-9_]*$/);\n" +
+        "  if (!m) return;\n" +
+        "  var word = m[0];\n" +
+        "  var prefix = before.slice(0, before.length - word.length);\n" +
+        "  var KEYS = ['class', 'record', 'interface', 'fun', 'var', 'val', 'if', 'else', 'for', 'while',\n" +
+        "    'return', 'import', 'public', 'private', 'static', 'this', 'super', 'new', 'break', 'continue',\n" +
+        "    'try', 'catch', 'finally', 'throw', 'switch', 'case', 'default', 'do', 'in', 'true', 'false',\n" +
+        "    'Int', 'String', 'Bool', 'Long', 'Double', 'Float', 'Char', 'listOf', 'println', 'print',\n" +
+        "    'assert', 'spawn', 'process', 'json', 'web'];\n" +
+        "  var words = KEYS.concat(docSymbols().map(function(s) { return s.label.split(' ')[0]; }));\n" +
+        "  var seen = {};\n" +
+        "  var best = null;\n" +
+        "  for (var i = 0; i < words.length; i++) {\n" +
+        "    var w = words[i];\n" +
+        "    if (w.indexOf(word) == 0 && w != word && !seen[w]) {\n" +
+        "      seen[w] = true;\n" +
+        "      if (!best || w.length < best.length) best = w;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  if (best) {\n" +
+        "    ta.value = prefix + best + ta.value.slice(ta.selectionStart);\n" +
+        "    var pos = prefix.length + best.length;\n" +
+        "    ta.setSelectionRange(pos, pos);\n" +
+        "    docs[activeDoc].dirty = true;\n" +
+        "    renderTabs();\n" +
+        "    paint();\n" +
+        "  }\n" +
+        "}\n" +
+        "\n" +
+        "// ---- formatar (Shift+Alt+F) ----\n" +
+        "function formatDoc() {\n" +
+        "  if (activeDoc < 0) return;\n" +
+        "  var out = [];\n" +
+        "  var depth = 0;\n" +
+        "  var lines = ta.value.split('\\n');\n" +
+        "  for (var i = 0; i < lines.length; i++) {\n" +
+        "    var t = lines[i].trim();\n" +
+        "    if (!t) { out.push(''); continue; }\n" +
+        "    if (/^\\}/.test(t)) depth = Math.max(0, depth - 1);\n" +
+        "    out.push(new Array(depth + 1).join('  ') + t);\n" +
+        "    if (t.indexOf('{') >= 0 && t.indexOf('}') < 0) depth++;\n" +
+        "  }\n" +
+        "  ta.value = out.join('\\n');\n" +
+        "  docs[activeDoc].dirty = true;\n" +
+        "  renderTabs();\n" +
+        "  paint();\n" +
+        "}\n" +
+        "\n" +
+        "// ---- comentar/descomentar (Ctrl+/) ----\n" +
+        "function toggleComment() {\n" +
+        "  if (activeDoc < 0) return;\n" +
+        "  var start = ta.selectionStart;\n" +
+        "  var end = ta.selectionEnd;\n" +
+        "  var ls = ta.value.lastIndexOf('\\n', start - 1) + 1;\n" +
+        "  var le = ta.value.indexOf('\\n', end);\n" +
+        "  if (le < 0) le = ta.value.length;\n" +
+        "  var block = ta.value.slice(ls, le);\n" +
+        "  var lines = block.split('\\n');\n" +
+        "  var allCommented = lines.every(function(l) { return l.trim().indexOf('//') == 0; });\n" +
+        "  var out = lines.map(function(l) {\n" +
+        "    return allCommented ? l.replace(/^\\s*\\/\\//, '') : '// ' + l;\n" +
+        "  }).join('\\n');\n" +
+        "  ta.value = ta.value.slice(0, ls) + out + ta.value.slice(le);\n" +
+        "  docs[activeDoc].dirty = true;\n" +
+        "  renderTabs();\n" +
+        "  paint();\n" +
+        "}\n" +
+        "\n" +
+        "// ---- mover linha (Alt+Up / Alt+Down) ----\n" +
+        "function moveLine(dir) {\n" +
+        "  if (activeDoc < 0) return;\n" +
+        "  var caret = ta.selectionStart;\n" +
+        "  var lines = ta.value.split('\\n');\n" +
+        "  var lineNo = ta.value.slice(0, caret).split('\\n').length - 1;\n" +
+        "  var to = lineNo + dir;\n" +
+        "  if (to < 0 || to >= lines.length) return;\n" +
+        "  var tmp = lines[lineNo];\n" +
+        "  lines[lineNo] = lines[to];\n" +
+        "  lines[to] = tmp;\n" +
+        "  ta.value = lines.join('\\n');\n" +
+        "  var pos = 0;\n" +
+        "  for (var i = 0; i <= to; i++) pos += lines[i].length + 1;\n" +
+        "  ta.setSelectionRange(pos - lines[to].length, pos - lines[to].length);\n" +
+        "  docs[activeDoc].dirty = true;\n" +
+        "  renderTabs();\n" +
+        "  paint();\n" +
+        "}\n" +
+        "\n" +
+        "// ---- atalhos extras ----\n" +
+        "var oldKey = document.onkeydown || null;\n" +
+        "document.addEventListener('keydown', function(e) {\n" +
+        "  var ctrl = e.ctrlKey || e.metaKey;\n" +
+        "  if (e.key === '`' && ctrl) {\n" +
+        "    e.preventDefault();\n" +
+        "    var panel = document.getElementById('panel');\n" +
+        "    if (panel.style.display == 'none') { showPanel('terminal'); }\n" +
+        "    else { panel.style.display = 'none'; }\n" +
+        "  } else if (ctrl && e.key === ' ') {\n" +
+        "    e.preventDefault();\n" +
+        "    completeAt();\n" +
+        "  } else if (e.altKey && !ctrl && e.key == 'ArrowUp') {\n" +
+        "    e.preventDefault();\n" +
+        "    moveLine(-1);\n" +
+        "  } else if (e.altKey && !ctrl && e.key == 'ArrowDown') {\n" +
+        "    e.preventDefault();\n" +
+        "    moveLine(1);\n" +
+        "  } else if (ctrl && e.shiftKey && e.key == 'F') {\n" +
+        "    e.preventDefault();\n" +
+        "    formatDoc();\n" +
+        "  } else if (ctrl && e.key == '/') {\n" +
+        "    e.preventDefault();\n" +
+        "    toggleComment();\n" +
+        "  }\n" +
+        "});\n"
+}
+
+apiWrite(String body): String {
+    var nl = body.indexOf("\n")
+    if (nl < 0) {
+        return "erro"
+    }
+    var filePath = body.substring(0, nl)
+    var content = body.substring(nl + 1, body.length())
+    if (File(filePath).writeText(content)) {
+        return "ok"
+    }
+    return "erro"
+}
+
+apiSearch(String body): String {
+    var nl = body.indexOf("\n")
+    if (nl < 0) {
+        return "[]"
+    }
+    return searchDir(body.substring(0, nl), body.substring(nl + 1, body.length()))
+}
+
+apiTheme(String body): String {
+    var idx = 0
+    if (body == "1") {
+        idx = 1
+    }
+    return themeAt(idx)
+}
+
+apiExec(String body): String {
+    var r = process.run("sh", "-c", body)
+    return "{\"stdout\": " + json.encode(r.stdout) + ", \"stderr\": " + json.encode(r.stderr)
+            + ", \"exitCode\": " + r.exitCode + "}"
+}
+
+apiGit(String body): String {
+    var r = process.run("sh", "-c", body)
+    return "{\"stdout\": " + json.encode(r.stdout) + ", \"stderr\": " + json.encode(r.stderr)
+            + ", \"exitCode\": " + r.exitCode + "}"
+}
+
+handle(String method, String path, String body): String {
+    if (method == "GET" && path == "/") {
+        return pageHtml()
+    }
+    if (method == "GET" && path == "/editor.css") {
+        return pageCss()
+    }
+    if (method == "GET" && path == "/editor.js") {
+        return pageJs()
+    }
+    if (method == "POST" && path == "/tokenize") {
+        return tokenizeResponse(body)
+    }
+    if (method == "POST" && path == "/api/outline") {
+        return outlineKf(body)
+    }
+    if (method == "POST" && path == "/api/git") {
+        return gitBranch(body)
+    }
+    if (method == "POST" && path == "/api/gitstatus") {
+        return gitStatus(body)
+    }
+    if (method == "POST" && path == "/api/gitdiff") {
+        return gitDiff(body)
+    }
+    if (method == "POST" && path == "/api/gitcommit") {
+        return gitCommit(body)
+    }
+    if (method == "POST" && path == "/api/dir") {
+        return dirList(body)
+    }
+    if (method == "POST" && path == "/api/read") {
+        return readDoc(body)
+    }
+    if (method == "POST" && path == "/api/listall") {
+        return listAll(body)
+    }
+    if (method == "POST" && path == "/api/diags") {
+        return diagList(body, new Lexer(body).tokenize())
+    }
+    if (method == "POST" && path == "/api/search") {
+        return apiSearch(body)
+    }
+    if (method == "POST" && path == "/api/theme") {
+        return apiTheme(body)
+    }
+    if (method == "POST" && path == "/api/exec") {
+        return apiExec(body)
+    }
+    if (method == "POST" && path == "/api/gitcmd") {
+        return apiGit(body)
+    }
+    if (method == "POST" && path == "/api/write") {
+        return apiWrite(body)
+    }
+    return null
+}

@@ -1,0 +1,10 @@
+# referencia de produto (nao versionada)
+inspiracao/
+
+# artefatos gerados
+build/
+dist/
+hs_err_*.log
+
+# logs
+*.log

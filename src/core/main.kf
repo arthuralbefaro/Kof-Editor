@@ -1,0 +1,49 @@
+main() {
+    println("Kof Editor - nucleo nativo (estagio 1)")
+    println("Uma linguagem. Um editor. Varios mundos.")
+    println("")
+
+    println("[1] Registry de linguagens (nativo, sem extensoes)")
+    var registry = new LanguageRegistry()
+    println("    registradas: " + registry.listNames())
+    println("    lexer de .json => " + registry.find("json"))
+    println("    lexer de .md   => " + registry.find("md"))
+    println("")
+
+    println("[2] Highlight de sintaxe Kof (lexer nativo, cores ANSI)")
+    var kofSource = sampleKofSource()
+    var theme = darkTheme()
+    var hl = new Highlighter(theme)
+    println(hl.render(new Lexer(kofSource).tokenize()))
+    println("")
+
+    println("[3] Tabela de tokens")
+    printTokenTable(new Lexer(kofSource).tokenize())
+    println("")
+
+    println("[4] Diagnostics nativos (erros em tempo de edicao)")
+    println(diagnostics(new Lexer(kofSource).tokenize()))
+    println("")
+
+    println("[5] Segunda linguagem nativa: JSON")
+    println(hl.render(new JsonLexer(sampleJsonSource()).tokenize()))
+    println("")
+
+    println("[6] JSON nativo (String/Int/List) - sem bibliotecas")
+    println("    targets: " + json.encode(listOf("jvm", "native", "web")))
+    println("    versao: " + json.encode(42))
+    println("")
+
+    println("[7] Buffer - modelo de documento")
+    var buf = new Buffer(kofSource)
+    println("    linhas: " + buf.lineCount())
+    println("    linha 1: " + buf.lineAt(0))
+    var edit = new Buffer("abc")
+    edit.insertText(0, 3, "XYZ")
+    println("    insert: " + edit.text())
+    edit.deleteText(0, 1, 1)
+    println("    delete: " + edit.text())
+    println("")
+
+    println("proximo estagio: E/S de arquivo + GUI nativa (ver docs/02-etapas.md)")
+}

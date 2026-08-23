@@ -1,0 +1,20 @@
+# Kof Editor — GNU General Public License v3.0
+
+O Kof Editor é software livre: você pode redistribuí-lo e/ou modificá-lo
+sob os termos da GNU General Public License versão 3, conforme publicada
+pela Free Software Foundation.
+
+Este programa é distribuído na esperança de que seja útil, mas SEM
+QUALQUER GARANTIA; sem sequer a garantia implícita de COMERCIABILIDADE ou
+ADEQUAÇÃO A UM DETERMINADO FIM. Veja a GNU General Public License para
+mais detalhes.
+
+Texto completo da licença:
+
+    https://www.gnu.org/licenses/gpl-3.0.html
+
+---
+
+Nota sobre a linguagem Kof: programas escritos em Kof NÃO são
+automaticamente GPLv3 (ver docs/LICENSING.md do projeto Kof4j). O Kof
+Editor, porém, é distribuído deliberadamente sob GPL-3.0.

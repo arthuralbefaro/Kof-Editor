@@ -1,0 +1,51 @@
+sampleKofSource(): String {
+    return "// Kof Editor - amostra nativa\n" +
+        "record Point(Int x, Int y)\n" +
+        "\n" +
+        "class Circle {\n" +
+        "    Double radius\n" +
+        "    public constructor(Double radius) {\n" +
+        "        this.radius = radius\n" +
+        "    }\n" +
+        "    public area(): Double {\n" +
+        "        return 3.14 * radius * radius\n" +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "main() {\n" +
+        "    var c = Circle(2.5)\n" +
+        "    println(\"area: \" + c.area())\n" +
+        "    @corrupt\n" +
+        "}\n"
+}
+
+sampleJsonSource(): String {
+    return "{\n" +
+        "  \"name\": \"Kof\",\n" +
+        "  \"version\": 0.4,\n" +
+        "  \"targets\": [\"jvm\", \"native\", \"web\"],\n" +
+        "  \"ok\": true,\n" +
+        "  \"nil\": null\n" +
+        "}"
+}
+
+printTokenTable(List<Token> tokens) {
+    for (var t in tokens) {
+        println(padRight(t.kind, 13) + "| " + visualText(t.text))
+    }
+}
+
+diagnostics(List<Token> tokens): String {
+    var out = ""
+    var count = 0
+    for (var t in tokens) {
+        if (t.kind == "error") {
+            count = count + 1
+            out = out + "  ERRO nativo: token invalido '" + visualText(t.text) + "'\n"
+        }
+    }
+    if (count == 0) {
+        return "nenhum erro encontrado"
+    }
+    return "  " + count + " erro(s) de sintaxe:\n" + out
+}

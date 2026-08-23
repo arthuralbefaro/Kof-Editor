@@ -1,0 +1,96 @@
+ansi(String code): String {
+    return "\u001b[" + code + "m"
+}
+
+red(Int c): Int {
+    return (c >> 16) & 0xFF
+}
+
+green(Int c): Int {
+    return (c >> 8) & 0xFF
+}
+
+blue(Int c): Int {
+    return c & 0xFF
+}
+
+colorStr(Int c): String {
+    return red(c) + ";" + green(c) + ";" + blue(c)
+}
+
+class Theme {
+    String name = "Dracula"
+    Int bg = 0xFF282A36
+    Int fg = 0xFFF8F8F2
+    Int header = 0xFF21222C
+    Int selection = 0xFF44475A
+    Int currentLine = 0xFF44475A
+    Int gutter = 0xFF6272A4
+    Int terminal = 0xFF21222C
+    Int terminalFg = 0xFF50FA7B
+    Int keyword = 0xFFFF79C6
+    Int type = 0xFF8BE9FD
+    Int stringColor = 0xFFF1FA8C
+    Int charColor = 0xFFF1FA8C
+    Int number = 0xFFFFB86C
+    Int comment = 0xFF6272A4
+    Int operator = 0xFFF8F8F2
+    Int punctuation = 0xFFF8F8F2
+    Int identifier = 0xFFF8F8F2
+    Int error = 0xFFFF5555
+}
+
+darkTheme(): Theme {
+    return new Theme()
+}
+
+lightThemeFrom(Theme t): Theme {
+    t.name = "Claro"
+    t.bg = 0xFFFFFFFF
+    t.fg = 0xFF24292E
+    t.header = 0xFFF6F8FA
+    t.selection = 0xFFADD6FF
+    t.currentLine = 0xFFF6F8FA
+    t.gutter = 0xFFA0A8B0
+    t.terminal = 0xFF24292E
+    t.terminalFg = 0xFF7EE787
+    t.keyword = 0xFFCF222E
+    t.type = 0xFF0550AE
+    t.stringColor = 0xFF0A3069
+    t.charColor = 0xFF0A3069
+    t.number = 0xFF0550AE
+    t.comment = 0xFF6E7781
+    t.operator = 0xFF24292E
+    t.punctuation = 0xFF24292E
+    t.identifier = 0xFF24292E
+    t.error = 0xFFCF222E
+    return t
+}
+
+lightTheme(): Theme {
+    return lightThemeFrom(darkTheme())
+}
+
+
+themeToJson(Theme t): String {
+    return "{\"name\":\"" + t.name + "\",\"bg\":\"" + colorStr(t.bg) + "\",\"fg\":\"" + colorStr(t.fg) +
+        "\",\"header\":\"" + colorStr(t.header) + "\",\"selection\":\"" + colorStr(t.selection) +
+        "\",\"currentLine\":\"" + colorStr(t.currentLine) + "\",\"gutter\":\"" + colorStr(t.gutter) +
+        "\",\"terminal\":\"" + colorStr(t.terminal) + "\",\"terminalFg\":\"" + colorStr(t.terminalFg) +
+        "\",\"keyword\":\"" + colorStr(t.keyword) + "\",\"type\":\"" + colorStr(t.type) +
+        "\",\"string\":\"" + colorStr(t.stringColor) + "\",\"char\":\"" + colorStr(t.charColor) +
+        "\",\"number\":\"" + colorStr(t.number) + "\",\"comment\":\"" + colorStr(t.comment) +
+        "\",\"operator\":\"" + colorStr(t.operator) + "\",\"punctuation\":\"" + colorStr(t.punctuation) +
+        "\",\"identifier\":\"" + colorStr(t.identifier) + "\",\"error\":\"" + colorStr(t.error) + "\"}"
+}
+
+themeAt(Int index): String {
+    if (index == 1) {
+        return themeToJson(lightTheme())
+    }
+    return themeToJson(darkTheme())
+}
+
+themeNames(): String {
+    return json.encode(listOf("Escuro", "Claro"))
+}

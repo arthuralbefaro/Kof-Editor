@@ -1,0 +1,48 @@
+class Buffer {
+    List<String> lines
+
+    public constructor(String text) {
+        this.lines = listOf("")
+        var line = ""
+        var i = 0
+        while (i < text.length()) {
+            if (text.substring(i, i + 1) == "\n") {
+                lines.add(line)
+                line = ""
+            } else {
+                line = line + text.substring(i, i + 1)
+            }
+            i = i + 1
+        }
+        lines.add(line)
+    }
+
+    public lineCount(): Int {
+        return lines.size()
+    }
+
+    public lineAt(Int i): String {
+        return lines.get(i)
+    }
+
+    public text(): String {
+        var out = ""
+        for (var i = 0; i < lines.size(); i++) {
+            if (i > 0) {
+                out = out + "\n"
+            }
+            out = out + lines.get(i)
+        }
+        return out
+    }
+
+    public insertText(Int line, Int col, String text) {
+        var current = lines.get(line)
+        lines.set(line, current.substring(0, col) + text + current.substring(col, current.length()))
+    }
+
+    public deleteText(Int line, Int col, Int len) {
+        var current = lines.get(line)
+        lines.set(line, current.substring(0, col) + current.substring(col + len, current.length()))
+    }
+}

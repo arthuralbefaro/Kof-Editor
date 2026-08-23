@@ -1,0 +1,426 @@
+errorCount(List<Token> tokens): Int {
+    var count = 0
+    for (var t in tokens) {
+        if (t.kind == "error") {
+            count = count + 1
+        }
+    }
+    return count
+}
+
+offsetLine(String code, Int offset): Int {
+    var line = 1
+    var i = 0
+    while (i < offset) {
+        if (code.substring(i, i + 1) == "\n") {
+            line = line + 1
+        }
+        i = i + 1
+    }
+    return line
+}
+
+offsetCol(String code, Int offset): Int {
+    var lineStart = 0
+    var i = 0
+    while (i < offset) {
+        if (code.substring(i, i + 1) == "\n") {
+            lineStart = i + 1
+        }
+        i = i + 1
+    }
+    return offset - lineStart + 1
+}
+
+diagList(String code, List<Token> tokens): String {
+    var out = "["
+    var first = true
+    for (var t in tokens) {
+        if (t.kind == "error") {
+            if (!first) {
+                out = out + ","
+            }
+            first = false
+            out = out + "{\"line\":" + offsetLine(code, t.start) + ",\"col\":" +
+                offsetCol(code, t.start) + ",\"text\":\"" + escapeJson(t.text) + "\"}"
+        }
+    }
+    return out + "]"
+}
+
+readDoc(String path): String {
+    return File(path).readText()
+}
+
+writeDoc(String path, String content): Bool {
+    return File(path).writeText(content)
+}
+
+gitStatus(String dir): String {
+    var r = process.run("git", "status", "--porcelain", "-b")
+    if (r.exitCode != 0) {
+        return ""
+    }
+    return r.stdout
+}
+
+gitCommit(String message): String {
+    var a = process.run("git", "add", "-A")
+    if (a.exitCode != 0) {
+        return "fail add: " + a.stderr
+    }
+    var c = process.run("git", "commit", "-m", message)
+    if (c.exitCode != 0) {
+        return "fail commit: " + c.stderr
+    }
+    return c.stdout
+}
+
+gitDiff(String file): String {
+    if (file.length() > 0) {
+        var d = process.run("git", "diff", file)
+        return d.stdout + d.stderr
+    }
+    var d = process.run("git", "diff")
+    return d.stdout + d.stderr
+}
+
+gitBranch(String dir): String {
+    var headPath = dir + "/.git/HEAD"
+    if (!File(headPath).exists()) {
+        return ""
+    }
+    var head = File(headPath).readText()
+    if (head.startsWith("ref: refs/heads/")) {
+        return head.substring(16).trim()
+    }
+    return head.trim()
+}
+
+listDir(String path): String {
+    return json.encode(Directory(path).list())
+}
+
+
+renderApp(String code, String lang, String file): String {
+    var tokens = new Lexer(code).tokenize()
+    var spans = tokenListJson(tokens)
+    var total = tokens.size()
+    var errors = errorCount(tokens)
+    var status = "tokens " + total + " - erros " + errors
+    return "{\"title\":\"Kof Editor\",\"lang\":\"" + lang + "\",\"file\":\"" + escapeJson(file) +
+        "\",\"doc\":\"" + escapeJson(code) + "\",\"status\":\"" + status + "\",\"diags\":" +
+        diagList(code, tokens) + ",\"spans\":" + spans + "}"
+}
+dirList(String path): String {
+    var files = Directory(path).list()
+    var out = "["
+    var first = true
+    for (var f in files) {
+        if (!first) {
+            out = out + ","
+        }
+        first = false
+        var isDir = File(path + "/" + f).isDirectory()
+        out = out + "{\"name\":\"" + escapeJson(f) + "\",\"dir\":" + isDir + "}"
+    }
+    return out + "]"
+}
+
+searchInFile(String path, String term): String {
+    var text = File(path).readText()
+    var out = ""
+    var from = 0
+    var first = true
+    while (from < text.length()) {
+        var idx = text.indexOf(term, from)
+        if (idx < 0) {
+            return "[" + out + "]"
+        }
+        if (!first) {
+            out = out + ","
+        }
+        first = false
+        out = out + "{\"line\":" + offsetLine(text, idx) + ",\"col\":" + offsetCol(text, idx) + "}"
+        from = idx + term.length()
+    }
+    return "[" + out + "]"
+}
+
+searchDir(String path, String term): String {
+    var files = Directory(path).list()
+    var out = "["
+    var first = true
+    for (var f in files) {
+        var full = path + "/" + f
+        if (!File(full).isDirectory()) {
+            var matches = searchInFile(full, term)
+            if (matches != "[]") {
+                if (!first) {
+                    out = out + ","
+                }
+                first = false
+                out = out + "{\"file\":\"" + escapeJson(f) + "\",\"matches\":" + matches + "}"
+            }
+        }
+    }
+    return out + "]"
+}
+
+listAllFiles(String path, String prefix): String {
+    var files = Directory(path).list()
+    var out = "["
+    var first = true
+    for (var f in files) {
+        var full = path + "/" + f
+        if (File(full).isDirectory()) {
+            var sub = listAllFiles(full, prefix + f + "/")
+            if (sub != "[]") {
+                if (!first) {
+                    out = out + ","
+                }
+                first = false
+                out = out + sub.substring(1, sub.length() - 1)
+            }
+        } else {
+            if (!first) {
+                out = out + ","
+            }
+            first = false
+            out = out + "\"" + prefix + f + "\""
+        }
+    }
+    return out + "]"
+}
+
+listAll(String path): String {
+    return listAllFiles(path, "")
+}
+
+outlineKf(String code): String {
+    var tokens = new Lexer(code).tokenize()
+    var out = "["
+    var first = true
+    for (var i = 0; i < tokens.size(); i++) {
+        var t = tokens.get(i)
+        if (offsetCol(code, t.start) == 1 && i + 1 < tokens.size()) {
+            var n = tokens.get(i + 1)
+            if (t.kind == "keyword" && (t.text == "class" || t.text == "record" || t.text == "interface") && n.kind == "identifier") {
+                if (!first) {
+                    out = out + ","
+                }
+                first = false
+                out = out + "{\"kind\":\"type\",\"name\":\"" + n.text + "\",\"line\":" + offsetLine(code, t.start) + "}"
+            } else if ((t.kind == "keyword" && t.text == "fun" && n.kind == "identifier") || (t.kind == "identifier" && n.text == "(" && i + 2 < tokens.size() && tokens.get(i + 2).text != ":")) {
+                if (!first) {
+                    out = out + ","
+                }
+                first = false
+                var fname = t.text
+                if (t.text == "fun") {
+                    fname = n.text
+                }
+                out = out + "{\"kind\":\"function\",\"name\":\"" + fname + "\",\"line\":" + offsetLine(code, t.start) + "}"
+            }
+        }
+    }
+    return out + "]"
+}
+
+createFile(String path): Bool {
+    return File(path).writeText("")
+}
+
+createDir(String path): Bool {
+    return Directory(path).create()
+}
+
+deleteEntry(String path): Bool {
+    return File(path).delete()
+}
+
+symbolsJson(String code): String {
+    var tokens = new Lexer(code).tokenize()
+    var out = "["
+    var first = true
+    var seen = ""
+    for (var t in tokens) {
+        if (t.kind == "identifier") {
+            if (!seen.contains("|" + t.text + "|")) {
+                if (!first) {
+                    out = out + ","
+                }
+                first = false
+                out = out + "{\"name\":\"" + t.text + "\",\"offset\":" + t.start + "}"
+                seen = seen + "|" + t.text + "|"
+            }
+        }
+    }
+    return out + "]"
+}
+
+occurrencesJson(String code, String name): String {
+    var tokens = new Lexer(code).tokenize()
+    var out = "["
+    var first = true
+    for (var t in tokens) {
+        if (t.kind == "identifier" && t.text == name) {
+            if (!first) {
+                out = out + ","
+            }
+            first = false
+            out = out + t.start
+        }
+    }
+    return out + "]"
+}
+
+keywordsJson(): String {
+    return json.encode(listOf("class", "interface", "record", "extends", "implements", "package",
+        "import", "public", "private", "protected", "static", "final", "abstract", "native",
+        "default", "override", "new", "this", "super", "return", "throw", "if", "else", "for",
+        "while", "do", "switch", "case", "break", "continue", "try", "catch", "finally",
+        "instanceof", "as", "var", "val", "void", "true", "false", "null"))
+}
+
+minInt(Int a, Int b): Int {
+    if (a < b) {
+        return a
+    }
+    return b
+}
+
+spaces(Int n): String {
+    var out = ""
+    var i = 0
+    while (i < n) {
+        out = out + "    "
+        i++
+    }
+    return out
+}
+
+trimLine(String s): String {
+    var start = 0
+    var end = s.length()
+    while (start < end) {
+        var c = s.substring(start, start + 1)
+        if (c == " " || c == "\t") {
+            start++
+        } else {
+            break
+        }
+    }
+    while (end > start) {
+        var c = s.substring(end - 1, end)
+        if (c == " " || c == "\t") {
+            end = end - 1
+        } else {
+            break
+        }
+    }
+    return s.substring(start, end)
+}
+
+formatKf(String code): String {
+    var out = ""
+    var depth = 0
+    var line = ""
+    var inString = false
+    var inLineComment = false
+    var inBlockComment = false
+    var i = 0
+    while (i < code.length()) {
+        var c = code.substring(i, i + 1)
+        var next2 = code.substring(i, minInt(i + 2, code.length()))
+        if (c == "\n") {
+            var trimmed = trimLine(line)
+            var opens = 0
+            var closes = 0
+            var j = 0
+            while (j < trimmed.length()) {
+                var ch = trimmed.substring(j, j + 1)
+                if (ch == "{") {
+                    opens++
+                } else if (ch == "}") {
+                    closes++
+                }
+                j++
+            }
+            var lineDepth = depth
+            if (closes > 0 && opens == 0) {
+                lineDepth = depth - closes
+                if (lineDepth < 0) {
+                    lineDepth = 0
+                }
+            }
+            if (trimmed.length() > 0) {
+                out = out + spaces(lineDepth) + trimmed + "\n"
+            } else {
+                out = out + "\n"
+            }
+            depth = depth + opens - closes
+            if (depth < 0) {
+                depth = 0
+            }
+            line = ""
+            inLineComment = false
+            i++
+            continue
+        }
+        if (inLineComment) {
+            line = line + c
+            i++
+            continue
+        }
+        if (inBlockComment) {
+            line = line + c
+            if (next2 == "*/") {
+                line = line + "*"
+                i++
+                inBlockComment = false
+            }
+            i++
+            continue
+        }
+        if (inString) {
+            line = line + c
+            if (c == "\\") {
+                i++
+                if (i < code.length()) {
+                    line = line + code.substring(i, i + 1)
+                }
+            } else if (c == "\"") {
+                inString = false
+            }
+            i++
+            continue
+        }
+        if (next2 == "//") {
+            line = line + "//"
+            i = i + 2
+            inLineComment = true
+            continue
+        }
+        if (next2 == "/*") {
+            line = line + "/*"
+            i = i + 2
+            inBlockComment = true
+            continue
+        }
+        if (c == "\"") {
+            line = line + c
+            inString = true
+            i++
+            continue
+        }
+        line = line + c
+        i++
+    }
+    var last = trimLine(line)
+    if (last.length() > 0) {
+        out = out + spaces(depth) + last
+    }
+    return out
+}
+

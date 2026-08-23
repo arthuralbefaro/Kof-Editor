@@ -1,0 +1,49 @@
+class LanguageEntry {
+    String name
+    String extension
+    String kind
+
+    public constructor(String name, String extension, String kind) {
+        this.name = name
+        this.extension = extension
+        this.kind = kind
+    }
+}
+
+class LanguageRegistry {
+    List<LanguageEntry> entries
+
+    init(): List<LanguageEntry> {
+        return listOf(
+            new LanguageEntry("Kof", "kf", "kof"),
+            new LanguageEntry("JSON", "json", "json"),
+            new LanguageEntry("Markdown", "md", "markdown"),
+            new LanguageEntry("Texto Plano", "txt", "plain"))
+    }
+
+    public constructor() {
+        this.entries = this.init()
+    }
+
+    public listNames(): String {
+        var out = ""
+        var first = true
+        for (var e in entries) {
+            if (!first) {
+                out = out + ", "
+            }
+            first = false
+            out = out + e.name + " (." + e.extension + ")"
+        }
+        return out
+    }
+
+    public find(String extension): String {
+        for (var e in entries) {
+            if (e.extension == extension) {
+                return e.kind
+            }
+        }
+        return ""
+    }
+}

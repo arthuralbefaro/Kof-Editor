@@ -1,0 +1,75 @@
+class Token {
+    String kind
+    String text
+    Int start
+    Int end
+
+    public constructor(String kind, String text, Int start, Int end) {
+        this.kind = kind
+        this.text = text
+        this.start = start
+        this.end = end
+    }
+}
+
+escapeJson(String s): String {
+    var out = ""
+    for (var i = 0; i < s.length(); i++) {
+        if (s.substring(i, i + 1) == "\"") {
+            out = out + "\\\""
+        } else if (s.substring(i, i + 1) == "\\") {
+            out = out + "\\\\"
+        } else if (s.substring(i, i + 1) == "\n") {
+            out = out + "\\n"
+        } else if (s.substring(i, i + 1) == "\r") {
+            out = out + "\\r"
+        } else if (s.substring(i, i + 1) == "\t") {
+            out = out + "\\t"
+        } else {
+            out = out + s.substring(i, i + 1)
+        }
+    }
+    return out
+}
+
+visualText(String s): String {
+    var out = ""
+    for (var i = 0; i < s.length(); i++) {
+        if (s.substring(i, i + 1) == "\n") {
+            out = out + "\\n"
+        } else if (s.substring(i, i + 1) == "\t") {
+            out = out + "\\t"
+        } else if (s.substring(i, i + 1) == "\r") {
+            out = out + "\\r"
+        } else {
+            out = out + s.substring(i, i + 1)
+        }
+    }
+    return out
+}
+
+tokenToJson(Token t): String {
+    return "{\"kind\":\"" + t.kind + "\",\"text\":\"" + escapeJson(t.text) +
+        "\",\"start\":" + t.start + ",\"end\":" + t.end + "}"
+}
+
+tokenListJson(List<Token> tokens): String {
+    var out = "["
+    var first = true
+    for (var t in tokens) {
+        if (!first) {
+            out = out + ","
+        }
+        first = false
+        out = out + tokenToJson(t)
+    }
+    return out + "]"
+}
+
+padRight(String s, Int width): String {
+    var out = s
+    while (out.length() < width) {
+        out = out + " "
+    }
+    return out
+}

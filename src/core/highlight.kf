@@ -1,0 +1,59 @@
+class Highlighter {
+    Theme theme
+
+    public constructor(Theme theme) {
+        this.theme = theme
+    }
+
+    public colorFor(String kind): String {
+        if (kind == "keyword") {
+            return ansi("38;2;" + colorStr(theme.keyword))
+        }
+        if (kind == "type") {
+            return ansi("38;2;" + colorStr(theme.type))
+        }
+        if (kind == "string") {
+            return ansi("38;2;" + colorStr(theme.stringColor))
+        }
+        if (kind == "char") {
+            return ansi("38;2;" + colorStr(theme.charColor))
+        }
+        if (kind == "number") {
+            return ansi("38;2;" + colorStr(theme.number))
+        }
+        if (kind == "comment") {
+            return ansi("38;2;" + colorStr(theme.comment))
+        }
+        if (kind == "operator") {
+            return ansi("38;2;" + colorStr(theme.operator))
+        }
+        if (kind == "punctuation") {
+            return ansi("38;2;" + colorStr(theme.punctuation))
+        }
+        if (kind == "error") {
+            return ansi("38;2;" + colorStr(theme.error))
+        }
+        return ansi("38;2;" + colorStr(theme.identifier))
+    }
+
+
+    public render(List<Token> tokens): String {
+        var out = ""
+        for (var t in tokens) {
+            out = out + this.colorFor(t.kind) + t.text + ansi("0")
+        }
+        return out
+    }
+
+    public renderTagged(List<Token> tokens): String {
+        var out = ""
+        for (var t in tokens) {
+            out = out + "[" + t.kind + "]" + t.text + "[/" + t.kind + "]"
+        }
+        return out
+    }
+
+    public renderSource(String src): String {
+        return this.render(new Lexer(src).tokenize())
+    }
+}
