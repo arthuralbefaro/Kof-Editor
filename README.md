@@ -21,6 +21,14 @@ escreve: o lexer de Kof é o lexer do editor.
 
 ---
 
+## Screenshot
+
+<p align="center">
+  <img src="kof-editor.png" alt="Kof Editor" width="800">
+</p>
+
+---
+
 ## Status
 
 - **Janela nativa** (WebKitGTK) com editor completo: abas, explorer em
