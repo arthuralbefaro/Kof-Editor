@@ -612,13 +612,21 @@ pageJs(): String {
         "  });\n" +
         "}\n" +
         "document.getElementById('git-diff-btn').onclick = function() { showDiff(''); };\n" +
-        "document.getElementById('dirbtn').onclick = function() {\n" +
-        "  var dir = dirInput.value || '.';\n" +
+        "document.getElementById('dirbtn').onclick = async function() {\n" +
+        "  var dir = dirInput.value.trim();\n" +
+        "  if (!dir) {\n" +
+        "    dir = await pickFolderPath();\n" +
+        "    if (!dir) return;\n" +
+        "    dirInput.value = dir;\n" +
+        "  }\n" +
         "  loadGit(dir);\n" +
         "  renderTree(dir, tree);\n" +
         "};\n" +
         "dirInput.addEventListener('keydown', function(e) {\n" +
-        "  if (e.key === 'Enter') renderTree(dirInput.value || '.', tree);\n" +
+        "  if (e.key === 'Enter') {\n" +
+        "    var d = dirInput.value.trim();\n" +
+        "    if (d) renderTree(d, tree);\n" +
+        "  }\n" +
         "});\n" +
         "\n" +
         "var currentDir = '';\n" +
