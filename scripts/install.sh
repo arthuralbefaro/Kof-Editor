@@ -25,11 +25,11 @@ cat > "$DEST/editor-ui.html" <<'UIEOF'
 <!DOCTYPE html>
 <html>
 <head><title>Kof Editor</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect x=%224%22 y=%224%22 width=%2256%22 height=%2256%22 rx=%2214%22 fill=%22%238be9fd%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22monospace%22 font-size=%2236%22 font-weight=%22bold%22 text-anchor=%22middle%22 fill=%22%231e1e24%22%3EK%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="kof.png">
 </head>
 <body style="margin:0;background:#1e1e24">
 <div id="boot" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#8be9fd;font-family:monospace">
-  <div style="font-size:40px;font-weight:bold">K</div>
+  <img src="kof.png" alt="Kof" style="width:110px">
   <div style="color:#a0a8b0">iniciando Kof Editor...</div>
 </div>
 <iframe id="kof-frame" style="width:100vw;height:100vh;border:none;display:none"></iframe>
@@ -104,7 +104,7 @@ if [ -n "${1:-}" ] && [ "${1:-}" != "--stop" ]; then
 fi
 
 sleep 3
-nohup "$WEBVIEW" "$UI" "Kof Editor" "$DEST/kof.png" >/dev/null 2>&1 &
+nohup "$WEBVIEW" "$UI" "Kof Editor" "$HOME/.local/share/kof-editor/kof.png" >/dev/null 2>&1 &
 echo $! > "$PID_DIR/webview.pid"
 echo "Kof Editor aberto (janela nativa WebKitGTK)${OPEN_URL:+ — abrindo: $1}"
 KOFEOF

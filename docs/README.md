@@ -50,6 +50,11 @@ O núcleo do editor compila e roda na **JVM** (via `kof build --target jvm`):
   tokenização (`/tokenize`) produzidos por código Kof — abre em qualquer
   navegador, com o reconhecimento de linguagem rodando no servidor em Kof puro
 
+O editor instalado (`scripts/install.sh` → comando `kof-editor`) abre uma
+janela nativa (WebKitGTK) com o front servido por `kof serve`: abas,
+explorer, terminal (com comandos TUI via `script` + `cleanTty` em Kof),
+git, temas e "Abrir pasta..." com diálogo nativo (zenity).
+
 O target **nativo** roda o núcleo completo (ELF estático); cores ANSI no
 nativo aguardam o escape `\u001b` no lexer. O **web** roda via `kof serve`
 com o cérebro Kof no servidor; o front declarativo em Kof aguarda o backend

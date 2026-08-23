@@ -53,6 +53,13 @@ diagnostics: um erro do compilador vira uma marca na linha correspondente
 
 - Estágio 1 entrega o pipeline de **saída**: o próprio demo imprime
   resultados estruturados no terminal.
+- O terminal web executa comandos reais via `process.run` (Kof) usando o
+  shell do usuário (`config.env("SHELL")`, fallback `bash`) — rota
+  `/api/exec` do front.
+- Comandos TUI (htop, top, vim, less, more, nano, man, watch) rodam via
+  `script -qec` e a saída é limpa em Kof: `cleanTty()` remove sequências
+  ESC e `crlfToLf()` normaliza CRLF → LF (o `String.replace` do Kof ainda
+  gera bytecode inválido — ver [08 — Restrições](08-restricoes-kof.md), B18).
 - O `ProcessRunner` depende de execução de processos no Kof
   (interop JVM ou syscalls nativos) — ver [02 — Etapas](02-etapas.md),
   Estágio 3.
@@ -62,5 +69,6 @@ diagnostics: um erro do compilador vira uma marca na linha correspondente
 - Terminal é sempre **processo real**: nada de simulação em JavaScript.
 - Split é sempre **vertical** (editor à esquerda, terminal à direita),
   reforçando o foco em editor de código.
-- A saída de `run`/`build` é texto puro; o editor não tenta interpretar
-  terminal full-screen do programa (sem TUI embutida).
+- A saída de `run`/`build` é texto puro; programas TUI são suportados via
+  `script` com a saída limpa de escapes — o editor não emula terminal
+  full-screen.

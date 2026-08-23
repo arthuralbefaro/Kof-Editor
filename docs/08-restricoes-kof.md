@@ -21,6 +21,7 @@
 | B14 | **`KofRuntime.java` gerado: text block com escapes quebrados (JWT)** | o template do JvmRuntime usa `"\"iat\":"` no text block → o arquivo gerado tem `""iat":"` (javac falha); o correto no text block é `\\"` para gerar `\"` | editor ficava sem runtime | corrigido na cópia de build (2 linhas do JWT); revisar no Kof4j |
 | B12 | **Native: `undefined reference` para função que modifica campos de classe** | `lightThemeFrom(Theme t): Theme { t.name = ... }` → `ld: undefined reference to lightThemeFrom` (símbolo não emitido; JVM/Web ok) | editor nativo usa o demo sem tema light | — |
 | B11 | **`var x = new Classe()` (local) com field-init → VerifyError** | `var t = new Theme()` (Theme com field init) + uso → `Bad local variable type`; `return new Theme()` e `lightFrom(darkTheme())` funcionam | `lightTheme()` refatorado para retorno direto/param | retorno direto |
+| B18 | **`String.replace(a, b)` com Strings → VerifyError** | `s.replace("\r\n", "\n")` → `Bad type on operand stack` — o compilador resolve o overload `replace(CC)` mas empurra as **Strings** na pilha | `cleanTty()` do terminal quebrava o `kof serve` no boot (editor inteiro morto, "nenhum botão funcionava") | `crlfToLf()` manual (substring + `==`, sem `replace`) |
 
 ## Lista ativa — features faltando
 
@@ -71,6 +72,16 @@
 | **`static` fields com init** | `class Colors { static Int primary = 0xFF... }` funciona |
 | **KofJS — entry invocado** | `node Default.mjs` imprime (`hello kofjs`, `42`, `a b c`) |
 | **Semântica `new` para classes** | construtor call sem `new` vira bytecode inválido — o training já usa `new User(...)`; editor agora usa `new` em todas as classes (records continuam sem) |
+
+## Editor — bugs nossos corrigidos (23/08)
+
+| Item | Causa | Fix |
+|------|-------|-----|
+| **Nenhum botão funcionava (web)** | 2 linhas órfãs no `pageJs()` do `web.kf` (`}).catch(...)` + `}` após o handler do `git-diff-btn`) → `SyntaxError` no JS gerado → script inteiro descartado | linhas removidas; validado com `node --check` no `/editor.js` servido |
+| **`kof serve` crashava no boot** | B18 (ver tabela acima) — `replace` com Strings | `crlfToLf()` manual |
+| **Ícone do app sem kof.png** | binário `kof-webview` antigo (sem `gtk_window_set_icon_from_file`) **e** launcher gerava `/kof.png` (heredoc com `$DEST` nunca definido no script) | recompilado `Kof4j/native/webview/kof-webview.c`; path absoluto `$HOME/.local/share/kof-editor/kof.png` no launcher; `_NET_WM_ICON` verificado via xprop |
+| **Tela de loading sem o ícone** | `editor-ui.html` mostrava um "K" estilizado | `kof.png` na tela de boot e no favicon |
+| **"Abrir pasta..." com `prompt()`** | sem diálogo nativo | `/api/folderpick` (Kof) → `zenity --file-selection --directory` |
 
 ## Histórico — corrigidos (não precisam entrar no prompt)
 

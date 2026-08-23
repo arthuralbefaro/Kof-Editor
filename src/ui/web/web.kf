@@ -612,8 +612,6 @@ pageJs(): String {
         "  });\n" +
         "}\n" +
         "document.getElementById('git-diff-btn').onclick = function() { showDiff(''); };\n" +
-        "  }).catch(function() {});\n" +
-        "}\n" +
         "document.getElementById('dirbtn').onclick = function() {\n" +
         "  var dir = dirInput.value || '.';\n" +
         "  loadGit(dir);\n" +
@@ -658,8 +656,15 @@ pageJs(): String {
         "  renderTree(dir, tree);\n" +
         "  statusEl.innerHTML = '<span>' + dir + '</span><span>pasta aberta</span>';\n" +
         "}\n" +
-        "document.getElementById('mi-open').onclick = function() {\n" +
-        "  var p = prompt('Caminho da pasta:', currentDir);\n" +
+        "async function pickFolderPath() {\n" +
+        "  try {\n" +
+        "    var r = await fetch('/api/folderpick', {method: 'POST', body: ''});\n" +
+        "    var p = (await r.text()).trim();\n" +
+        "    return p || null;\n" +
+        "  } catch (e) { return null; }\n" +
+        "}\n" +
+        "document.getElementById('mi-open').onclick = async function() {\n" +
+        "  var p = await pickFolderPath();\n" +
         "  if (p) openFolder(p);\n" +
         "};\n" +
         "document.getElementById('mi-recent').onclick = function() {\n" +
@@ -1323,16 +1328,94 @@ apiTheme(String body): String {
     return themeAt(idx)
 }
 
+userShell(): String {
+    var shell = config.env("SHELL")
+    if (shell == null || shell.length() == 0) {
+        shell = "bash"
+    }
+    return shell
+}
+
+isTuiCommand(String cmd): Bool {
+    var first = cmd.trim()
+    var space = first.indexOf(" ")
+    if (space > 0) {
+        first = first.substring(0, space)
+    }
+    return first == "htop" || first == "top" || first == "vim" || first == "less"
+            || first == "more" || first == "nano" || first == "man" || first == "watch"
+}
+
+cleanTty(String s): String {
+    var out = ""
+    var i = 0
+    while (i < s.length()) {
+        if (s.charAt(i) == 27) {
+            if (i + 1 < s.length() && s.charAt(i + 1) == 91) {
+                var j = i + 2
+                var fin = false
+                while (j < s.length() && !fin) {
+                    var f = s.charAt(j)
+                    if (f == 109 || f == 75 || f == 74 || f == 72 || f == 102
+                            || f == 65 || f == 66 || f == 67 || f == 68
+                            || f == 104 || f == 108 || f == 126) {
+                        fin = true
+                    } else {
+                        j++
+                    }
+                }
+                i = j + 1
+                continue
+            }
+            i++
+            continue
+        }
+        out = out + s.substring(i, i + 1)
+        i++
+    }
+    return crlfToLf(out)
+}
+
+crlfToLf(String s): String {
+    var out = ""
+    var i = 0
+    while (i < s.length()) {
+        if (s.substring(i, i + 1) == "\r" && i + 1 < s.length()
+                && s.substring(i + 1, i + 2) == "\n") {
+            out = out + "\n"
+            i = i + 2
+        } else {
+            out = out + s.substring(i, i + 1)
+            i++
+        }
+    }
+    return out
+}
+
 apiExec(String body): String {
-    var r = process.run("sh", "-c", body)
-    return "{\"stdout\": " + json.encode(r.stdout) + ", \"stderr\": " + json.encode(r.stderr)
-            + ", \"exitCode\": " + r.exitCode + "}"
+    var shell = userShell()
+    if (isTuiCommand(body)) {
+        var r = process.run("script", "-qec", shell + " -c " + body, "/dev/null")
+        return "{\"stdout\": " + json.encode(cleanTty(r.stdout)) + ", \"stderr\": "
+                + json.encode(cleanTty(r.stderr)) + ", \"exitCode\": " + r.exitCode + "}"
+    }
+    var r2 = process.run(shell, "-c", body)
+    return "{\"stdout\": " + json.encode(r2.stdout) + ", \"stderr\": " + json.encode(r2.stderr)
+            + ", \"exitCode\": " + r2.exitCode + "}"
 }
 
 apiGit(String body): String {
     var r = process.run("sh", "-c", body)
     return "{\"stdout\": " + json.encode(r.stdout) + ", \"stderr\": " + json.encode(r.stderr)
             + ", \"exitCode\": " + r.exitCode + "}"
+}
+
+pickFolder(): String {
+    var r = process.run("zenity", "--file-selection", "--directory", "--title", "Selecionar pasta")
+    if (r.exitCode == 0) {
+        return r.stdout.trim()
+    }
+    return ""
 }
 
 handle(String method, String path, String body): String {
@@ -1383,6 +1466,9 @@ handle(String method, String path, String body): String {
     }
     if (method == "POST" && path == "/api/exec") {
         return apiExec(body)
+    }
+    if (method == "POST" && path == "/api/folderpick") {
+        return pickFolder()
     }
     if (method == "POST" && path == "/api/gitcmd") {
         return apiGit(body)
