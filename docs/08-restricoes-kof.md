@@ -167,5 +167,5 @@ Validado: `printf 'olá — ✓\n' | curl -X POST /tokenize` → tokens ok; web.
 - **int/string/bool** minúsculos e Int/String/Bool maiúsculos — ambos aceitos.
 - `class User(String name)` record-style; default parameters; `handle(...)` com parse corrigido.
 - **KofJS** (J6) ainda quebra no for: `KofJS: for-loop expected Label(end)` (JsBackend.parseLoop:739) — o editor estático segue esperando.
-- Meu fix de Content-Type (text/html/css/js) continua ausente do upstream — reaplicado no build local.
+- **Content-Type** — agora **no upstream** (`77a955c`): `KofHttpServer.buildResponse` detecta `<!DOCTYPE`/`<html` → `text/html`, `:root`/`body {`/`<style` → `text/css`, `var `/`function `/`document.`/`async ` → `application/javascript`. Sem isso o navegador renderiza o editor como texto plano. Verificado: `/` → text/html, `/editor.css` → text/css, `/editor.js` → application/javascript.
 - stdlib nova: kof.security (JWT), kof.web (routing/middleware), kof.config, kof.log, debugger (kof-debug).

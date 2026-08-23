@@ -21,7 +21,9 @@ highlight, menu, temas, problemas, atalhos, pastas recentes, templates.
 - [x] Terminal integrado (Ctrl+`) — executa via shell do host
 - [x] Terminal com comandos TUI (htop/top/vim/less/...) — `script -qec` + `cleanTty` em Kof (ESC/CR limpos)
 - [x] "Abrir pasta..." com diálogo nativo — `/api/folderpick` (zenity) em vez de `prompt()`
+- [x] Botão "abrir" da sidebar: input vazio → diálogo nativo (não cai mais no cwd do serve)
 - [x] Ícone do app (kof.png) na janela (webview recompilado) e na tela de loading
+- [x] Content-Type correto no `kof serve` (html/css/js) — página renderiza no navegador
 
 ## Faltando (ordem sugerida)
 
