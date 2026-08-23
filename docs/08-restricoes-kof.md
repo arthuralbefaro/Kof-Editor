@@ -21,7 +21,7 @@
 | B14 | **`KofRuntime.java` gerado: text block com escapes quebrados (JWT)** | o template do JvmRuntime usa `"\"iat\":"` no text block → o arquivo gerado tem `""iat":"` (javac falha); o correto no text block é `\\"` para gerar `\"` | editor ficava sem runtime | corrigido na cópia de build (2 linhas do JWT); revisar no Kof4j |
 | B12 | **Native: `undefined reference` para função que modifica campos de classe** | `lightThemeFrom(Theme t): Theme { t.name = ... }` → `ld: undefined reference to lightThemeFrom` (símbolo não emitido; JVM/Web ok) | editor nativo usa o demo sem tema light | — |
 | B11 | **`var x = new Classe()` (local) com field-init → VerifyError** | `var t = new Theme()` (Theme com field init) + uso → `Bad local variable type`; `return new Theme()` e `lightFrom(darkTheme())` funcionam | `lightTheme()` refatorado para retorno direto/param | retorno direto |
-| B18 | **`String.replace(a, b)` com Strings → VerifyError** | `s.replace("\r\n", "\n")` → `Bad type on operand stack` — o compilador resolve o overload `replace(CC)` mas empurra as **Strings** na pilha | `cleanTty()` do terminal quebrava o `kof serve` no boot (editor inteiro morto, "nenhum botão funcionava") | `crlfToLf()` manual (substring + `==`, sem `replace`) |
+| B18 | ~~**`String.replace(a, b)` com Strings → VerifyError**~~ — **CORRIGIDO (JVM)** | `s.replace("\r\n", "\n")` — resolução de overload agora escolhe `(CharSequence, CharSequence)` quando os args são String; `replace('a','b')` continua `(CC)` | `cleanTty()` do terminal (crlfToLf mantido por segurança) | pode usar `replace` de novo |
 
 ## Lista ativa — features faltando
 
@@ -72,6 +72,23 @@
 | **`static` fields com init** | `class Colors { static Int primary = 0xFF... }` funciona |
 | **KofJS — entry invocado** | `node Default.mjs` imprime (`hello kofjs`, `42`, `a b c`) |
 | **Semântica `new` para classes** | construtor call sem `new` vira bytecode inválido — o training já usa `new User(...)`; editor agora usa `new` em todas as classes (records continuam sem) |
+
+## Corrigidos no 0.0.7 (verificados com repros)
+
+| Bug | Evidência |
+|-----|-----------|
+| **B2** `++` em campo | `pos++` → `1` (JVM) |
+| **B3** record + for-in + accessors | `for (var t in list2) { t.kind() }` → `kw` |
+| **B9** `json.decode<List<String>>` + `get(0)` | `list.get(0).length()` → `3` |
+| **B10** construtor primário em métodos | `new Connection("mel", 80).hostInfo()` → `mel` |
+| **B14** JWT text block | `jwt.create`/`jwt.verify` rodam (iat/exp corretos) |
+| **B18** `String.replace(String,String)` (JVM) | `replace("\r\n", "\n")` → `[a\nb\nc]`; `replace('a','b')` segue ok — overload resolve `(CharSequence, CharSequence)` para String |
+| **B4** `listOf()` vazio + `add` | `listOf()` + `add(Token())` + `get(0).kind` → `kw` — elemento pinado no `add` |
+| **B8** default params em construtor | `new Ponto()` → `1,2`; `new Ponto(5)` → `5,2` — JVM e Native (ELF); fix extra no call-site `new` (wrapper reduzido) |
+| **B5** `return` nu em função tipada | `return` sem valor em `: Int` devolve o default (`0`/`null`/`false`) — antes: bytecode inválido (launcher reporta como "JavaFX não encontrado", que é só o VerifyError disfarçado) |
+| **F4** KofProcess | `process.run` usado pelo editor (git, terminal, zenity) |
+
+> ⚠️ `kof run --target native` está quebrado no CLI ("no main class found") — usar `kof build --target native` + executar o ELF (funciona).
 
 ## Editor — bugs nossos corrigidos (23/08)
 
@@ -137,6 +154,8 @@ Sem multibyte (`abc`) responde. O travamento ocorre até em `body.length()` — 
 while (body.toString().getBytes(StandardCharsets.UTF_8).length < contentLength) {
 ```
 Validado: `printf 'olá — ✓\n' | curl -X POST /tokenize` → tokens ok; web.kf inteiro (38KB com —) → 224KB de tokens.
+
+> **UPDATE (23/08, 0.0.7):** o fix já está no upstream (`KofHttpServer.java:124`). ATENÇÃO: o `kof-cli` é um jar *shaded* — copiar só o `kof-compiler.jar` não atualiza o servidor; é preciso reinstalar o `kof-cli-0.0.7-alpha.jar` também. Verificado: `len=8:olá — ✓` no serve.
 
 ## F4 — IMPLEMENTADO no Kof novo (KofProcess)
 

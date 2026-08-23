@@ -58,8 +58,9 @@ diagnostics: um erro do compilador vira uma marca na linha correspondente
   `/api/exec` do front.
 - Comandos TUI (htop, top, vim, less, more, nano, man, watch) rodam via
   `script -qec` e a saída é limpa em Kof: `cleanTty()` remove sequências
-  ESC e `crlfToLf()` normaliza CRLF → LF (o `String.replace` do Kof ainda
-  gera bytecode inválido — ver [08 — Restrições](08-restricoes-kof.md), B18).
+  ESC e `crlfToLf()` normaliza CRLF → LF. (B18 — `String.replace` com
+  Strings — foi corrigido no Kof 0.0.7; o `crlfToLf` manual foi mantido por
+  segurança.)
 - O `ProcessRunner` depende de execução de processos no Kof
   (interop JVM ou syscalls nativos) — ver [02 — Etapas](02-etapas.md),
   Estágio 3.
