@@ -38,23 +38,26 @@ Entrega: o **cérebro** do editor, compilando e rodando na JVM.
 
 Validação: `scripts/run.sh` imprime as 7 seções da demo (registry, highlight,
 tabela de tokens, diagnostics, JSON, buffer).
+**Verificado em 24/08/2026 (Kof 0.0.14): paridade byte a byte nos 3 targets**
+— a mesma demo roda idêntica na JVM, no ELF nativo (`kof build --target
+native`) e no KofJS (`node Default.mjs`).
 
-## Estágio 1+ — Desbloqueios do Kof ⏳
+## Estágio 1+ — Desbloqueios do Kof ✅ (maioria resolvida no 0.0.14)
 
 Features da linguagem necessárias para o Estágio 2 e além
-(todos itens de feedback para o Kof4j):
+(itens de feedback para o Kof4j — estado verificado contra 0.0.14-alpha):
 
 | Feature do Kof | Usada para | Hoje |
 |----------------|------------|------|
-| Escape `\u001b` em literais | Cores ANSI reais no highlight (workaround atual: `json.decode`) | ⚠️ via JSON (JVM) |
-| API de String no NativeBackend (`length`, `substring`, concat) | Editor rodar em binário nativo | ❌ `String_length` indefinido no .s |
-| JSON de objetos no NativeBackend | Registry/estado serializado no nativo | ❌ JVM-only |
-| Módulos multi-arquivo | Fim do `combine.sh`; módulos reais `core/`, `ui/`, `term/` | ❌ cross-file não resolve |
-| E/S de arquivos e args de `main` | Abrir/salvar arquivos, CLI do editor | ❌ |
-| Tipos genéricos `List<T>` reais | Eliminar workarounds de cadeias ligadas | ⚠️ parcial (listOf String ok) |
-| Processos (executar programas) | Terminal e runner nativos | ❌ |
+| Escape `\u001b` em literais | Cores ANSI reais no highlight | ✅ corrigido (`ansi()` usa o escape direto, JVM e native) |
+| API de String no NativeBackend (`length`, `substring`, concat) | Editor rodar em binário nativo | ✅ corrigido |
+| JSON de objetos no NativeBackend | Registry/estado serializado no nativo | ❌ `JSN002` (arrays já fecharam via JSN003) |
+| Módulos multi-arquivo | Fim do `combine.sh`; módulos reais `core/`, `ui/`, `term/` | ❌ cross-file não resolve (`kof build <dir>` compila múltiplos arquivos, sem semântica unificada — P1 do plano do Kof) |
+| E/S de arquivos e args de `main` | Abrir/salvar arquivos, CLI do editor | ✅ `kof.io` (File/Path/Directory) + `main(String[] args)` |
+| Tipos genéricos `List<T>` reais | Eliminar workarounds de cadeias ligadas | ✅ |
+| Processos (executar programas) | Terminal e runner nativos | ✅ `process.run(...)` → Result(stdout, stderr, exitCode) |
 
-## Estágio 2 — Arquivo e sessão ⏳ (depende de E/S de arquivo)
+## Estágio 2 — Arquivo e sessão ⏳ (destravado: kof.io + main(args))
 
 - Abrir/salvar arquivos via `kof run editor.kf <path>` (ou API de arquivo da
   linguagem)
@@ -66,7 +69,7 @@ Features da linguagem necessárias para o Estágio 2 e além
 Critério de conclusão: editar um `.kf` de ponta a ponta
 (carregar → editar → salvar → compilar).
 
-## Estágio 3 — Terminal nativo ⏳ (depende de processos)
+## Estágio 3 — Terminal nativo ⏳ (destravado: `process.run`)
 
 - Terminal integrado **nativo** (nada de xterm.js): o editor executa
   processos do sistema e mostra stdout/stderr
@@ -101,9 +104,10 @@ Critério: primeira versão "usável" na JVM.
 - Multi-linguagem: Markdown e JSON ganham lexers completos;
   texto plano com detecção básica
 
-## Estágio 6 — Editor nativo ⏳ (depende de String API + runtime nativo)
+## Estágio 6 — Editor nativo ✅ (destravado e verificado no 0.0.14)
 
-- Build `--target native` do editor completo (ELF autônomo)
+- ~~Build `--target native` do editor completo (ELF autônomo)~~ — **o núcleo
+  compila e roda no ELF com saída idêntica à JVM** (verificado 24/08/2026)
 - Mesmo comportamento observável do Estágio 4/5
 - Terminal nativo com syscalls (via runtime Kof)
 - Release binária: um binário, zero dependências
@@ -131,11 +135,12 @@ O contrato com o KofJS está definido em [09 — Contrato KofJS](09-kofjs.md).
 
 ## Dependências externas (roadmap do Kof4j que destrava o editor)
 
-1. String API completa no NativeBackend (`length`, `substring`, `concat`,
-   `charAt` com tipos corretos) — **Estágio 6**
-2. Escape `\u001b` (e `\uXXXX`) em literais — **Estágio 1+/4**
-3. Módulos multi-arquivo — **todos os estágios**
-4. E/S de arquivos e args — **Estágio 2**
-5. Processos — **Estágio 3**
-6. JSON de objetos no native — **Estágio 6**
-7. Interop com Java para UI — **Estágio 4**
+Estado verificado contra 0.0.14-alpha (24/08/2026):
+
+1. ~~String API completa no NativeBackend~~ — ✅ **corrigido** — Estágio 6 destravado
+2. ~~Escape `\u001b` (e `\uXXXX`) em literais~~ — ✅ **corrigido**
+3. **Módulos multi-arquivo** — ❌ P1 do plano do Kof — **todos os estágios**
+4. ~~E/S de arquivos e args~~ — ✅ `kof.io` + `main(args)` — Estágio 2 destravado
+5. ~~Processos~~ — ✅ `process.run` — Estágio 3 destravado
+6. **JSON de objetos no native** — ❌ `JSN002` — Estágio 6 (fim do JSON manual)
+7. Interop com Java para UI — ⚠️ parcial (annotations/SAM/externos funcionam no caminho Android/JVM; a janela nativa do editor pode usar `kof.ui` + webview)

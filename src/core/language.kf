@@ -29,11 +29,12 @@ class LanguageRegistry {
         var out = ""
         var first = true
         for (var e in entries) {
-            if (!first) {
-                out = out + ", "
+            if (first) {
+                out = out + e.name + " (." + e.extension + ")"
+                first = false
+            } else {
+                out = out + ", " + e.name + " (." + e.extension + ")"
             }
-            first = false
-            out = out + e.name + " (." + e.extension + ")"
         }
         return out
     }

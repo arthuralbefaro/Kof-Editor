@@ -23,16 +23,17 @@ Kof Editor (um código-fonte)
 - Caminho natural para o Estágio 4 (UI via interop com Java: Swing/JavaFX
   ou render próprio sobre `java.awt`/`javafx`).
 
-## Native ⏳ (aguarda API de String no NativeBackend)
+## Native ⏳ (String API resolvida; falta validar o editor completo)
 
 - O backend nativo gera ELF x86-64 estático.
-- Hoje o editor compila a maior parte para nativo, mas o runtime ainda não
-  tem `String.length`/`substring` — o lexer depende deles. Bloqueio
-  documentado em [08 — Restrições](08-restricoes-kof.md).
-- JSON de objetos também é JVM-only hoje (o editor usa JSON de
-  String/Int/List, que já funciona nativo — o núcleo foi escrito para não
+- A API de String nativa (`length`, `charAt`, `substring`, concat...) foi
+  corrigida no Kof — o bloqueio original do lexer caiu; **repro do editor
+  completo no native pendente** (B11/B12 podem afetar: ver
+  [08 — Restrições](08-restricoes-kof.md)).
+- JSON de objetos também é JVM-only hoje (JSN002) — o editor usa JSON de
+  String/Int/List, que já funciona nativo (o núcleo foi escrito para não
   depender de JSON de objetos).
-- Quando a String API nativa existir: um binário, zero dependências.
+- Com o editor compilando no native: um binário, zero dependências.
 
 ## Web ⏳ (aguarda backend Web do Kof — KofJS)
 
@@ -59,18 +60,19 @@ hoje) justamente para não vazar para o nativo.
 | Registry | ✅ | ✅ | ⏳ |
 | Buffer | ✅ | ✅* | ⏳ |
 | JSON (String/Int/List) | ✅ | ✅ | ⏳ |
-| JSON (objetos) | ✅ | ❌ | ⏳ |
-| ANSI no highlight | ✅ (via `json.decode` de `\u001b`) | ⏳ | ⏳ |
-| UI | ⏳ Estágio 4 | ⏳ Estágio 6 | ⏳ Estágio 7 |
+| JSON (objetos) | ✅ | ❌ (JSN002; arrays ✅) | ⏳ |
+| ANSI no highlight | ✅ (`\u001b` nativo da linguagem) | ✅ (`\u001b` no native — B6) | ⏳ |
+| UI | ⏳ Estágio 4 (ou `kof.ui` + webview) | ⏳ Estágio 6 | ⏳ Estágio 7 |
 
-\* compila, mas depende da String API nativa para executar (ver 08).
+\* compila e executa (String API nativa corrigida); repro do editor completo pendente (ver 08).
 ## Escopo de desenvolvimento atual (23/08/2026)
 
 O foco atual de desenvolvimento é **JVM e Native para Linux**. O target
 **web** é uma capacidade real e funcional (o front do editor roda via
 `kof serve` + `kof-webview`), mas está **fora do escopo atual de
-desenvolvimento**: sem release web, sem navegador como alvo de entrega,
-sem manutenção ativa do backend KofJS até o Kof destravar o for-loop
-(J6). A stack web permanece como o caminho de execução de
+desenvolvimento**: sem release web, sem navegador como alvo de entrega.
+O bloqueio J6 (for-loop no KofJS) foi **resolvido** no Kof (0.0.14:
+while/for/do-while ✅ nos 3 targets), o que volta a permitir manutenção do
+backend KofJS. A stack web permanece como o caminho de execução de
 desenvolvimento (a janela do editor roda em `kof-webview`, que é o
 mesmo front servido).

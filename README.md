@@ -38,8 +38,8 @@ escreve: o lexer de Kof é o lexer do editor.
 - **Terminal**: executa comandos via shell do host (não-interativo por ora)
 - **Paleta de comandos** (Ctrl+Shift+P), Quick Open (Ctrl+P), símbolos
   (Ctrl+Shift+O), snippets, busca por arquivo e por texto
-- **Compilado para JVM e (em breve) nativo Linux** — release via
-  `scripts/release.sh`
+- **Compilado para JVM, nativo Linux e KofJS com paridade byte a byte**
+  (núcleo verificado nos 3 targets) — release via `scripts/release.sh`
 
 ```bash
 kof-editor              # abre a janela

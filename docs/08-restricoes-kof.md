@@ -1,51 +1,150 @@
 # 08 — O que falta no Kof para o editor (fonte do prompt)
 
-> Última verificação: 0.0.5-alpha (árvore atual — hex, bitwise, static init, KofJS 100% p/ programas simples).
-> Cada item tem repro mínimo e impacto no editor. Corrigidos ficam no histórico.
+> Última verificação: **0.1.0-beta** (`025a5fd`, 25/08/2026) — **build local e
+> repros executados**. O núcleo do editor mantém **paridade byte a byte nos
+> 3 targets**. Cada item tem repro mínimo e impacto no editor. Corrigidos
+> ficam no histórico.
+
+## Atualização `3329323`→`025a5fd` (25/08/2026 — G5 observability + G9 security)
+
+| Mudança | Verificação executada |
+|---------|----------------------|
+| **B25 ✅ CORRIGIDO upstream** (`3329323` exclui String/Int/Long/Bool do SEM025 — mesmo fix do nosso, commitado) | `.length()`/`contains`/`substring` voltam a compilar em todos os targets |
+| **kof.observability (G5) — sem gap de target** | ✅ JVM/Native/JS: `health()` → "UP", `readiness()` → true, `counter`/`increment(name,delta)` (1→6), `gauge`, `requestId()`; ⚠️ requestId tem formato divergente: 36 chars c/ hífens na JVM/JS (UUID) vs 32 hex no native |
+| **G9 security**: `apiKeyGenerate/apiKeyValid`, `sessionCreate/sessionGet/sessionDestroy`, `rateLimit(key, limit, window)` | ✅ JVM/Native/JS: key gerada valida, "fake" rejeita, session retorna o usuário, rateLimit ok |
+| fix native `65f748f`: args vazio (N3) + box String `+=` (N9) | sem repro dedicado |
+
+Persistem neste build: **B19, B20, B21(+PKG004), B23, B24, J7**.
+Paridade JVM == Native == JS do editor **revalidada**.
+
+## Atualização 0.1.0-beta (25/08/2026 — G10 completo, security nativa)
+
+| Mudança | Verificação executada |
+|---------|----------------------|
+| **B22 ✅ CORRIGIDO** — PBKDF2+SHA-512+JWT+AES-GCM nativos em asm (SECN001/002/003/004, G10 fechado) | `passwords.verify("abc", hash("abc"))` → `true` no native |
+| **Multi-arquivo avançou (F3)** — `e462fcb` alinha serve/check/test ao modelo de módulo | `kof check <dir>` **resolve cross-file** ✅ (erro proposital detectado entre irmãos); ⚠️ mas `kof build <dir>`/`kof run <file>` **ainda não resolvem irmãos** (SEM025) e run não aceita diretório (COMP001) |
+| **PKG004 novo**: `package` declarado deve corresponder ao diretório ("um diretório é um pacote") | valida no run também — arquivos com package errado na pasta quebram o run |
+| ~~NOVO B25 (P0 bloqueante) — SEM025 falso positivo em builtins~~ — **CORRIGIDO** (`3329323`) | o commit `05cf8bd` acusava `Cannot resolve method 'length' on type 'String'` para qualquer método de String/Int/Long/Bool — quebrou a linguagem inteira; fix aplicado localmente e depois commitado upstream |
+| ⚠️ Inconsistência de release | `VERSION` = `0.0.14-alpha`, pom `<revision>` = `0.1.0-beta` (CI de concordância deveria pegar) |
+| kof.mq | `queueSize` ✅; `mq.size` ainda dá crash `COMP002` (B24); subscribe com lambda c/ captura ainda VerifyError (B23); `fn(msg)` dos docs → SEM011 |
+
+## Atualização `c4a184f`→`3b3f793` (25/08/2026 — messaging, strings e security nativos)
+
+| Mudança | Verificação executada |
+|---------|----------------------|
+| **kof.mq** (pub/sub + filas em memória) | ✅ `mq.queue()`/`push`/`pop` funcionam; ❌ **`mq.size(q)` dá crash do compilador** (`COMP002: frame crash`, disfarçado de "JavaFX não encontrado" no launcher) — o nome certo é `mq.queueSize(q)`; ❌ **`mq.subscribe(topic, lambda com captura)` → `VerifyError: Bad local variable type` em `Lambda0.invoke`** (sem teste E2E upstream; a sintaxe `fn(msg)` documentada nem parseia) |
+| **String→numérico no NATIVE** (`c822ed3`: `kof_string_to_int/long/double/float` em asm) | ✅ `"42".toInt()` → 42, `"7".toLong()+1` → 8; FLT001 continua para double/float |
+| **passwords PBKDF2 no NATIVE** (`c4a184f`) | ❌ na época `verify` retornava false — **corrigido no 0.1.0-beta** (ver acima) |
+| base64 + JSON string handling no NativeRuntime | sem repro dedicado |
+
+## Atualização `22fd027`+`f44654f` (25/08/2026)
+
+| Mudança | Efeito no editor |
+|---------|------------------|
+| **kof.ui: `Link`, `Image`, `Icon`, `Font`** | novos widgets com `text/setText`, `url/setUrl`, `src`, `setFont/font`, `remove` — úteis para o front do editor migrar para widgets (`kof check` OK) |
+| **`KofUnaryOp` ganhou `D2F`** + JSON quoting no NativeRuntime + package lookup no SemanticAnalyzer | sem efeito direto |
+| ⚠️ **NOVO B21 — `kof run <file>` compila o DIRETÓRIO inteiro** | exige exatamente um `main()` entre todos os `.kf` da pasta (`PKG002: module has N main() functions`). O editor não é afetado (`build/` tem só o `editor.kf` combinado), mas qualquer repro/teste em pasta compartilhada quebra — rodar em dir isolado |
+
+## Resultado da verificação 0.0.14 (repros executados, 24/08/2026)
+
+### Corrigidos confirmados com repro
+
+| Bug | Repro executado | Resultado |
+|-----|-----------------|-----------|
+| B2 `pos++` em campo | contador com `pos++` | ✅ 1/2/3 |
+| B3 record + for-in + accessors | `record Token` + `listOf` + `x.kind()` | ✅ `kw` |
+| B10 campos do construtor primário em métodos | `class Connection(String host, Int porta)` + método | ✅ `mel` |
+| B11 `var x = new Classe()` local c/ field-init | `var t = new Theme()` + uso | ✅ |
+| B12 native: função que modifica campos | `lightThemeFrom(t)` no ELF | ✅; **e `kof run --target native` voltou a funcionar** |
+| B13 VerifyError no editor completo | demo das 7 seções na JVM | ✅ sumiu |
+| J5 `\n` literal no runtime JS gerado | `node --check` dos `.mjs` do editor | ✅ sintaxe OK |
+| J4 editor completo no JsBackend | `node Default.mjs` do editor | ✅ roda as 7 seções (após workarounds J7/Buffer) |
+
+### Novos bugs encontrados nesta verificação (reportar ao Kof4j)
+
+| # | Bug | Repro mínimo | Impacto no editor | Workaround aplicado |
+|---|-----|--------------|-------------------|---------------------|
+| **B19** | **`new` dentro de construtor suprime o `super()` implícito** — sintoma novo: `VerifyError: Type uninitializedThis ... not assignable` (antes era `Bad local variable type`) | classe com field-init + `var y = new Outra()` no construtor | classes do editor não podem instanciar dentro do construtor sem chamá-lo explicitamente | **`super()` explícito** na 1ª linha (verificado: funciona) |
+| **B20** | **Método de usuário com nome de builtin String desvia para o builtin no NATIVE**: `startsWith`, `contains`, `trim`... → resultado errado silencioso | `class D { contains(String s): Bool { return true } }` → `false` no native, `true` na JVM | `Lexer.startsWith` retornava errado no native → comentários `//` viravam operadores | **renomeado para `hasPrefix`** (lexer.kf) |
+| **J7** | **JsBackend: statements após `if` dentro de loop são içadas ao header** do for JS com `continue` sintético; variável declarada no corpo vira TDZ → `ReferenceError`. Acontece em `while`/`for`/`for-in` | loop com `if (!first) {...}` seguido de mais statements (`j2/j4.kf`) | qualquer loop com código após um `if` quebra no JS | **if/else como último statement do corpo** (`listNames` reestruturado) |
+| **B21** | **`kof run <file>` compila o diretório inteiro** (novo em `f44654f`): exige um único `main()` entre todos os `.kf` da pasta → `PKG002` | dois `.kf` com `main()` no mesmo dir + `kof run um.kf` | scripts de repro/teste em pasta compartilhada quebram; `scripts/run.sh` do editor OK (build/ tem só o combinado) | arquivo sozinho no dir; ou `kof build <dir>` consciente do escopo |
+| **B22** | **`passwords.verify` no NATIVE retorna sempre `false`** (`c4a184f`) | `verify("abc", passwords.hash("abc"))` → false no native, true na JVM | segurança nativa inutilizável para login | usar JVM p/ auth até corrigir |
+| **B23** | **`mq.subscribe(topic, lambda c/ captura)` → `VerifyError: Bad local variable type`** em `Lambda0.invoke`; a sintaxe `fn(msg)` dos docs nem parseia | `var r = ""; mq.subscribe("t", (msg) -> { r = msg; return 0 })` | pub/sub do kof.mq inutilizável na JVM | usar filas (`push`/`pop`) que funcionam |
+| **B24** | **namespace não suportado dá crash em vez de diagnóstico**: `mq.size(q)` → `COMP002: frame crash` ("JavaFX não encontrado" no launcher) | `var n = mq.size(q)` | erros de API viram crash críptico | nome correto: `mq.queueSize(q)` |
+| — | **`class X(args)` compila como RECORD real** (`extends java.lang.Record`, ACC_FINAL): estender essas classes falha (`cannot inherit from final class`) e declarar campos no corpo delas dá `NoSuchFieldError` | `class Animal(String name)` + `class Dog extends Animal` | herança exige classe "normal" com `constructor` explícito | usar `class X { campo; constructor(...) }` p/ classes com estado |
+
+### Mudança de semântica que expôs bug latente nosso
+
+- **`List.add` agora faz append de verdade** (correção do B4 no Kof). O padrão
+  sentinela `listOf("")` + `add(...)` **sem** `remove(0)` deixou de funcionar:
+  o `Buffer` ficava com uma linha vazia fantasma no índice 0.
+  **Fix nosso**: `lines.remove(0)` ao final do constructor (`buffer.kf`).
+- Os demais módulos já usavam sentinela + `remove(0)` corretamente.
+
+### Estado final: paridade dos 3 targets
+
+```text
+kof run editor.kf            == kof build --target native (ELF) == node Default.mjs
+7 seções idênticas byte a byte (modulo ANSI) — verificado com diff em 24/08/2026
+```
+
+## Atualização documental 0.0.14 (antes do build local)
+
+| Mudança no Kof | Efeito no editor | Evidência |
+|----------------|------------------|-----------|
+| Overload de construtores | F1 avança — classes com múltiplos construtores compilam | commit `83de878`; overload geral de métodos ainda colapsa por nome (nota do target Android) |
+| **`test "nome" { }` estruturado** | suíte nativa nos 3 targets, PASS/FAIL por nome + exit code (G6 fechado) | `status.md`; commit `a362613` |
+| **`kof debug` DAP MVP** | breakpoints por linha Kof + call stack sobre stdio (`KofDebug.java` + JDWP cru) — item 8 do roadmap parcialmente destravado; locals/stepping ficam para a Fase 7 do debugger | `debug-adapter.md`; commits `9b46610`, 0.0.14 |
+| **LSP com frontend real** | `kof lsp`: didOpen/didChange → publishDiagnostics do compilador de verdade (mesmos códigos/mensagens); hover/completion ainda não existem | `tooling/LSP.md` |
+| **Otimizador de IR + `--release`** | constant folding/DCE sempre ativos; `--release` tira metadata de debug | `status.md` |
+| **kof.ui multi-janela** | `Window` ganhou size/font/bold/color e múltiplas janelas — caminho oficial da janela do editor passa a ser kof.ui + webview `bin/kof-webview` (WebKitGTK) | CHANGELOG 0.0.14 |
+| **JSN003 fechado no Native** | `json.decode<Int[]>` funciona no native; **JSN002 (objetos) segue aberto** — F6 continua | commits `beba03d` |
+| **Android target (Fase 1)** | interop externo (.jar/.aar), SAM conversion, annotations — sem efeito direto no editor hoje | `targets/KOFANDROID.md` |
 
 ## Lista ativa — bugs do compilador
 
 | # | Bug | Repro mínimo | Impacto no editor | Workaround atual |
 |---|-----|--------------|-------------------|------------------|
 | B1 | ~~Método declarado depois~~ — **CORRIGIDO** | `class Foo { call() helper() }` → `7` | ordem natural liberada (refatoração futura) | — |
-| B10 | **Campos do construtor primário dentro de métodos quebram** | `class Connection(String host, Int porta) { hostInfo(): String { return host } }` → `NoSuchMethodError: String Connection.hostInfo()` (acesso direto no main funciona) | construtor primário ainda não usável com métodos | `public constructor` com `this.x = x` |
+| B10 | ~~**Campos do construtor primário dentro de métodos quebram**~~ — **CORRIGIDO (0.0.7)** | `class Connection(String host, Int porta) { hostInfo(): String { return host } }` → `NoSuchMethodError` | construtor primário liberado (F1 avança; overload de construtores chegou no 0.0.14) | — |
 | B2 | ~~`++`/`--` em campo~~ — **CORRIGIDO (`9fb735f`)** | `pos++` → `1` | lexer usa `pos++` | — |
-| B3 | **`record` + lista: `for (var t in list)` e `var t = list.get(i)` quebram accessors** | `record Token(...)` + `listOf(t0)` + `for (var t in list) { t.kind() }` → `NoSuchMethodError: 'java.lang.Object Token.kind()'` | Editor não usa `record` (usa `class` com campos); `Token t = list.get(1)` (declaração tipada) funciona | `class` no lugar de `record` |
-| B4 | **`listOf()` vazio + `add` deixa elemento como `Object`** | `var list = listOf()` + `list.add(Token(...))` + `list.get(0).kind` → VerifyError | Padrão `listOf(Token("","",0,0))` + `list.remove(0)` | sentinela + remove |
-| B5 | **`return` nu (sem valor e sem `;`) quebra o parser** | `if (x) { return }` → `Expected expression` | Baixo | `return;` |
+| B3 | ~~**`record` + lista: `for (var t in list)` e `var t = list.get(i)` quebram accessors**~~ — **CORRIGIDO (0.0.7)** | `for (var t in list2) { t.kind() }` → `kw` | Editor pode voltar a usar `record` como value object | — |
+| B4 | ~~**`listOf()` vazio + `add` deixa elemento como `Object`**~~ — **CORRIGIDO (0.0.7)** | elemento pinado no `add` | fim do padrão sentinela + remove | — |
+| B5 | ~~**`return` nu (sem valor e sem `;`) quebra o parser**~~ — **CORRIGIDO (0.0.7)** | devolve o default do tipo (`0`/`null`/`false`) | baixo | — |
 | B6 | ~~Escapes `\uXXXX`~~ — **CORRIGIDO** | `"\u001b"` → ESC real no JVM **e no native** | `ansi()` virou `"\u001b[" + code + "m"` — cores no terminal nativo | — |
-| B7 | ~~Field initializers de instância ignorados~~ — **CORRIGIDO** | `class A { Int n = 42 }` → `42` | `Theme` sem constructor (19 campos com init) | — |
-| B7 | **Field initializers de instância são ignorados silenciosamente** | `class A { Int n = 42 }` → `n == 0` | `Theme` e demais usam construtor com params | construtor |
-| B8 | **Default params não parseiam** | `constructor(Int x = 12)` → erro de parse | — | aspiracional do learn/35 |
-| B9 | **`json.decode<List<String>>` + `get(0)` devolve `Object`** | `var list = json.decode<List<String>>(raw)` + `list.get(0).length()` → VerifyError | `ansi()` usa `"" + get(0)` para tipar | concat |
-| B14 | **`KofRuntime.java` gerado: text block com escapes quebrados (JWT)** | o template do JvmRuntime usa `"\"iat\":"` no text block → o arquivo gerado tem `""iat":"` (javac falha); o correto no text block é `\\"` para gerar `\"` | editor ficava sem runtime | corrigido na cópia de build (2 linhas do JWT); revisar no Kof4j |
-| B12 | **Native: `undefined reference` para função que modifica campos de classe** | `lightThemeFrom(Theme t): Theme { t.name = ... }` → `ld: undefined reference to lightThemeFrom` (símbolo não emitido; JVM/Web ok) | editor nativo usa o demo sem tema light | — |
-| B11 | **`var x = new Classe()` (local) com field-init → VerifyError** | `var t = new Theme()` (Theme com field init) + uso → `Bad local variable type`; `return new Theme()` e `lightFrom(darkTheme())` funcionam | `lightTheme()` refatorado para retorno direto/param | retorno direto |
+| B7 | ~~Field initializers de instância ignorados~~ — **CORRIGIDO (`48041b1`)** | `class A { Int n = 42 }` → `42` | `Theme` sem constructor (19 campos com init) | — |
+| B8 | ~~**Default params não parseiam**~~ — **CORRIGIDO (0.0.7, JVM e Native)** | `new Ponto()` → `1,2`; `new Ponto(5)` → `5,2` | construtores com defaults idiomáticos | — |
+| B9 | ~~**`json.decode<List<String>>` + `get(0)` devolve `Object`**~~ — **CORRIGIDO (0.0.7)** | `list.get(0).length()` → `3` | `ansi()` sem concat de tipagem | — |
+| B14 | ~~**`KofRuntime.java` gerado: text block com escapes quebrados (JWT)**~~ — **CORRIGIDO (0.0.7)** | `jwt.create`/`jwt.verify` rodam | editor não precisa mais da cópia corrigida de build | — |
+| B12 | ~~**Native: `undefined reference` para função que modifica campos de classe**~~ — **CORRIGIDO (verificado 0.0.14)** | `lightThemeFrom(t)` roda no ELF | editor nativo volta a ter tema light | — |
+| B11 | ~~**`var x = new Classe()` (local) com field-init → VerifyError**~~ — **CORRIGIDO (verificado 0.0.14)** | `var t = new Theme()` + uso funciona | — | — |
+| B13 | ~~**VerifyError `Bad local variable type` no editor completo**~~ — **SUMIU no 0.0.14** | demo das 7 seções roda na JVM | — | — |
 | B18 | ~~**`String.replace(a, b)` com Strings → VerifyError**~~ — **CORRIGIDO (JVM)** | `s.replace("\r\n", "\n")` — resolução de overload agora escolhe `(CharSequence, CharSequence)` quando os args são String; `replace('a','b')` continua `(CC)` | `cleanTty()` do terminal (crlfToLf mantido por segurança) | pode usar `replace` de novo |
 
 ## Lista ativa — features faltando
 
 | # | Feature | Impacto no editor | Notas |
 |---|---------|-------------------|-------|
-| F1 | **Construtor primário `class Foo(Int x)`** — ⚠️ **parcial** | campos acessam direto no main (`c.host` ✓); acesso dentro de métodos quebra (B10) | bloqueado por B10 |
-| F2 | ~~`args` de `main`~~ — **CORRIGIDO** | `main(String[] args)` + `kof run x.kf hello mundo` → `hello`/`mundo` | CLI do editor destravado | — |
-| F3 | **Módulos multi-arquivo** (resolução de símbolos entre arquivos) | `combine.sh` concatena 9 módulos em 1 arquivo | fim do combine |
-| F4 | **Processos (executar programas)** | Terminal/runner nativos do editor (Estágio 3) | hoje o host Java executa via `ProcessBuilder` |
+| F1 | ~~Construtor primário `class Foo(Int x)`~~ — **LIBERADO** | B10 corrigido (0.0.7) + overload de construtores (0.0.14) | usar `class Foo(Int x)` idiomático |
+| F2 | ~~`args` de `main`~~ — **CORRIGIDO** | `main(String[] args)` + `kof run x.kf hello mundo` → `hello`/`mundo` | CLI do editor destravado | 
+| F3 | **Módulos multi-arquivo** (resolução de símbolos entre arquivos) | `combine.sh` concatena 9 módulos em 1 arquivo | fim do combine; avançou: `kof build <dir>` já compila múltiplos arquivos, falta semântica unificada (P1 do plano do Kof) |
+| F4 | ~~Processos (executar programas)~~ — **IMPLEMENTADO (`process.run`)** | Terminal/runner nativos do editor (Estágio 3) destravados | `var r = process.run("git", "status")` → Result(stdout, stderr, exitCode); virtual threads no 0.0.14 |
 | F5 | **`spawn` no target Native** | — | o próprio Kof documenta `CONC001` |
-| F6 | **JSON de objetos no NativeBackend** | `json.encode` de `Token`/`LanguageEntry` (hoje: JSON manual nas funções `*ToJson` do editor) | JVM suporta; native dá `JSN002` |
-| F7 | **String API no NativeBackend** | — | ✅ já corrigido (length/charAt) — ver histórico |
-| F8 | ~~Binding de janela~~ — **CHEGOU (`a8d0f3f`)** | `kof.ui Window/Label`: `Window("título")`, `w.title`, `w.bind(label)`, `w.show()`, `w.close()`; JVM/Native são no-ops, a UI é KofJS (DOM) | a janela nativa do editor usará `Window` + o webview nativo do Kof | — |
-| F9 | **`kof_platform` no runtime JS** (node: IO, navegador: DOM) | IO no browser (J2) e launcher web | — |
+| F6 | **JSON de objetos no NativeBackend** | `json.encode` de `Token`/`LanguageEntry` (hoje: JSON manual nas funções `*ToJson` do editor) | JVM suporta; native dá `JSN002` (arrays já fecharam via JSN003) |
+| F7 | ~~String API no NativeBackend~~ — **CORRIGIDO** | length/charAt/substring etc. | ver histórico |
+| F8 | ~~Binding de janela~~ — **CHEGOU (`a8d0f3f`)** | `kof.ui Window/Label`: `Window("título")`, `w.title`, `w.bind(label)`, `w.show()`, `w.close()`; 0.0.14 adicionou size/font/bold/color e multi-janela; a UI renderiza por KofJS no webview nativo | a janela nativa do editor pode migrar para `Window` + `bin/kof-webview` |
+| F9 | ~~`kof_platform` no runtime JS~~ — **RESOLVIDO (runtime embarcado)** | IO delega para Java (`KofJsRunner`); browser continua DOM shim | J2 fechado |
 
 ## Bugs do KofJS (backend JS)
 
 | # | Bug | Repro | Impacto |
 |---|-----|-------|---------|
 | J1 | ~~`__kof_entry()` nunca invocado~~ — **CORRIGIDO** | hello/for-in rodam no node | — |
-| J4 | ~~Editor quebra no JsBackend~~ — **AVANÇOU** | o editor completo agora gera `Default.mjs` + `index.html` (mount `#kof-root`) | falta o runtime JS compilar | |
-| J5 | **`kof-runtime.mjs` gerado com `\n` literais não escapados** | `const html = "<!DOCTYPE html>\n<html>..."` → SyntaxError no node | runtime JS do KofJS | — |
-| J2 | **IO JS: `kof_platform` não ligado** | `File(...).writeText` no JS → `kof_platform.writeText is not a function` (falta o runtime node/platform) | IO no browser |
+| J4 | ~~**Editor quebra no JsBackend**~~ — **RESOLVIDO (verificado 0.0.14, com workarounds J7 + Buffer)** | `node Default.mjs` roda as 7 seções do editor; paridade byte a byte com a JVM | manter os workarounds até J7/B19 serem corrigidos upstream |
+| J5 | ~~**`kof-runtime.mjs` gerado com `\n` literais não escapados**~~ — **CORRIGIDO (verificado 0.0.14)** | `node --check` passa nos `.mjs` do editor | — |
+| J2 | ~~IO JS: `kof_platform` não ligado~~ — **RESOLVIDO** | IO delega para Java via `KofJsRunner`; `kof-runtime-io.mjs` cobre filesystem/stdin/stdout | IO funciona no runtime embarcado |
 | J3 | ~~`handleConstructorCall`~~ — **CORRIGIDO** | `class Token` + `new` compila e roda no node (`kw`) | — |
+| J6 | ~~for-loop quebrado (`KofJS: for-loop expected Label(end)`)~~ — **RESOLVIDO (≤0.0.14)** | while/for/do-while/break/continue ✅ nos 3 targets (`backend-parity.md`) | front web/KofJS destravado |
 
 ## Novidades do Kof (desta checagem)
 
@@ -115,18 +214,28 @@
 | String API no NativeBackend (`length`, `charAt`) | `5170c5d` |
 | `kof.io` (File/Path/Directory), `kof.time`, `kof test`, `spawn` (JVM) | atual |
 
+## Novidades do Kof (desta checagem, 0.0.14-alpha)
+
+| Item | Evidência |
+|------|-----------|
+| **`kof debug` DAP MVP** | `KofDebug.java` + `JdwpClient.java`; breakpoints por linha Kof + call stack (Fases 1-3 do debugger) |
+| **LSP com frontend real** | `kof lsp` → publishDiagnostics do compilador; hover/completion planejados |
+| **`test "nome" { }`** | suíte estruturada nos 3 targets (G6 fechado) |
+| **Otimizador de IR + `--release`** | constant folding/DCE sempre ativos |
+| **Overload de construtores** | commit `83de878` |
+| **kof.ui multi-janela + size/font/bold/color** | CHANGELOG 0.0.14 |
+| **process.run consolidado** | virtual threads no process output (0.0.14) |
+| **Android target Fase 1** | `--target android` gera projeto Maven + APK |
+| **kof.http client + kof.mq / db SQLite nativo / orm completo / log+config nativos** | G2/G3/G1 fechados no Kof (contexto) |
+
 ## Prioridade sugerida (para você ajeitar)
 
-1. **B13** — regressão pós-`9fb735f`: `VerifyError: Bad local variable type` em múltiplos métodos (`main`, `diagList`) com o compilador atual; o editor usa o build `9fb735f` (sem debug) até estabilizar
-2. **B2** — `++` em campo **instável** (regressão no `6812632`; lexer no workaround)
-2. **super() com `new` em construtor** — regrediu no `6812632` (registry usa `init()`)
-3. **B10** — campos do construtor primário em métodos (destrava F1)
-4. **B3/B4/B9** — records/listas tipadas (value objects de verdade)
-5. **F6** — JSON objetos no native (fim do JSON manual)
-6. **F8** — binding `window()` (editor 100% Kof)
-7. **F2/F3/F4/F5/F9** — args, módulos, processos, spawn native, platform JS
-8. **B5/B8** — parser (return nu, default params)
-9. **J4/J2** — KofJS com o editor completo e IO
+1. **Reportar B19/B20/B23/B24/J7 ao Kof4j** — repros em `/tmp/opencode/kof-repros/` (nat2-nat6, s2/s8, j2/j4, mq4d-mq7d); workarounds ativos (`super()` explícito, `hasPrefix`, if/else no fim do loop)
+2. **Alinhar VERSION × pom** (`0.0.14-alpha` vs `0.1.0-beta`) antes do próximo release
+3. **F3 multi-arquivo**: estender o modelo de módulo do `check` para `build`/`run` → fim do `combine.sh`
+4. **Migrar janela nativa para `Window` + `bin/kof-webview`** (F8) — widgets Link/Image/Icon/Font + observability/G9 disponíveis
+5. **Run/Debug** — integrar `kof debug` (DAP stdio) ao painel do editor
+6. **F6** — JSON objetos no native (JSN002 segue aberto)
 ## B17 — runtime trava com strings multibyte (0.0.5-alpha, REGRESSÃO GRAVE)
 
 **Sintoma**: qualquer handler do KofHttpServer com body contendo bytes >127 (á, é, ç, —, →, emoji) trava em loop até o socket timeout (15s) e cai. O editor "não carrega texto": o textarea é transparente e o highlight via /tokenize nunca pinta em arquivos acentuados.

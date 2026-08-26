@@ -55,10 +55,11 @@ janela nativa (WebKitGTK) com o front servido por `kof serve`: abas,
 explorer, terminal (com comandos TUI via `script` + `cleanTty` em Kof),
 git, temas e "Abrir pasta..." com diálogo nativo (zenity).
 
-O target **nativo** roda o núcleo completo (ELF estático); cores ANSI no
-nativo aguardam o escape `\u001b` no lexer. O **web** roda via `kof serve`
-com o cérebro Kof no servidor; o front declarativo em Kof aguarda o backend
-KofJS (ver [09 — Contrato KofJS](09-kofjs.md)).
+O target **nativo** roda o núcleo completo (ELF estático) e o **KofJS** roda
+o mesmo núcleo em `node`/GraalJS — **paridade byte a byte com a JVM,
+verificada em 24/08/2026 contra o Kof 0.0.14**. O **web** roda via `kof serve`
+com o cérebro Kof no servidor; o front declarativo em Kof aguarda a adoção
+dos widgets `kof.ui` (ver [09 — Contrato KofJS](09-kofjs.md)).
 
 ## Como rodar
 
@@ -68,7 +69,7 @@ scripts/build.sh        # combina e gera build/out
 ```
 
 O compilador `kof` usado deve ser a versão em desenvolvimento do Kof
-(release `0.0.4-alpha` atual ou superior). A variável `KOF` pode apontar para
+(release `0.0.14-alpha` atual ou superior). A variável `KOF` pode apontar para
 o binário desejado:
 
 ```bash

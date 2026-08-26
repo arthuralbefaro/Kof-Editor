@@ -15,6 +15,7 @@ class Buffer {
             i = i + 1
         }
         lines.add(line)
+        lines.remove(0)
     }
 
     public lineCount(): Int {

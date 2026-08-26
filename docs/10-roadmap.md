@@ -34,10 +34,10 @@ highlight, menu, temas, problemas, atalhos, pastas recentes, templates.
 | 3 | **Paleta de comandos web** (Ctrl+Shift+P) com filtro | — | substitui o prompt atual |
 | 4 | **Buscar na pasta com resultados clicáveis** | — | endpoint /api/search existe (searchDir) |
 | 5 | **Painel de busca lateral (Ctrl+Shift+F)** | — | |
-| 6 | **Terminal nativo em Kof** (processos) | **F4** (processos no Kof) | hoje o host executa via shell |
-| 7 | **Git nativo em Kof** | **F4** | hoje host-side |
-| 8 | **Run/Debug com breakpoints** | debugger do Kof em construção (DebugInfo na IR) | — |
-| 9 | **Editor web 100% KofJS** (sem servidor) | **J4** (`unknown local slot 0`) | o front já é o mesmo |
+| 6 | ~~**Terminal nativo em Kof** (processos)~~ — destravado | **✅ F4 resolvido** (`process.run`) | migrar do shell do host para `process.run` em Kof |
+| 7 | ~~**Git nativo em Kof**~~ — destravado | **✅ F4 resolvido** (`process.run`) | migrar do host-side para `process.run` |
+| 8 | **Run/Debug com breakpoints** — destravado parcialmente | debugger MVP do Kof chegou (Fases 1-3): `kof debug` DAP sobre stdio, breakpoints por linha Kof + call stack (JVM); locals/stepping = Fase 7 | integrar o DAP ao painel do editor |
+| 9 | ~~**Editor web 100% KofJS** (sem servidor)~~ — **RESOLVIDO (verificado 0.0.14)** | J6/J2/J4/J5 fechados; o núcleo roda as 7 seções idênticas à JVM (com workarounds J7) | manter workarounds até B19/B20/J7 subirem |
 | 10 | **Minimap web** | overlay | possível |
 | 11 | **Snippets configuráveis** (user snippets) | — | |
 | 12 | **Settings web** (settings.json na UI) | — | existe no legado Swing |
@@ -48,7 +48,10 @@ highlight, menu, temas, problemas, atalhos, pastas recentes, templates.
 
 ## Dependências do Kof (destravam itens acima)
 
-- **F4 processos** → terminal/git nativos (6, 7)
-- **J4 KofJS com o editor completo** → editor sem servidor (9)
-- **Debugger Kof** → Run/Debug (8)
-- **F2 args de main, F3 módulos** → CLI e estrutura (indiretos)
+Estado verificado contra 0.0.14-alpha (24/08/2026):
+
+- ~~**F4 processos**~~ — ✅ `process.run` → terminal/git nativos destravados (6, 7)
+- ~~**J6 KofJS for-loop / J2 IO platform**~~ — ✅ resolvidos no 0.0.14 → item 9 depende só do repro J4/J5
+- **Debugger Kof** — 🟡 MVP disponível (`kof debug`: breakpoints + call stack) → Run/Debug (8)
+- **F3 módulos multi-arquivo** — ❌ P1 do plano do Kof (indireto)
+- **LSP** — 🟡 diagnostics reais via `kof lsp`; hover/completion planejados (alternativa ao autocomplete nativo do Estágio 5)

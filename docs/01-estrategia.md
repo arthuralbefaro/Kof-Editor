@@ -51,7 +51,7 @@ texto plano estão no registry e entram em estágios futuros. A regra:
 
 ## Estratégia de construção (estágios)
 
-A linguagem Kof ainda está em alpha (`0.0.4`). A estratégia é **construir o
+A linguagem Kof ainda está em alpha (`0.0.14-alpha`). A estratégia é **construir o
 editor em paralelo com a linguagem**, entregando em cada estágio apenas o
 que o Kof consegue compilar hoje, e marcando explicitamente o que depende de
 features futuras (ver [02 — Etapas](02-etapas.md) e

@@ -20,11 +20,14 @@ class Lexer {
         return src.substring(pos, pos + 1)
     }
 
-    public startsWith(String s): Bool {
-        if (pos + s.length() > len) {
+    public hasPrefix(String s): Bool {
+        var n = s.length()
+        var end = pos + n
+        if (end > len) {
             return false
         }
-        return src.substring(pos, pos + s.length()) == s
+        var piece = src.substring(pos, end)
+        return piece == s
     }
 
     isWhitespace(String c): Bool {
@@ -55,7 +58,7 @@ class Lexer {
     scanBlock() {
         pos = pos + 2
         while (!this.atEnd()) {
-            if (this.startsWith("*/")) {
+            if (this.hasPrefix("*/")) {
                 pos = pos + 2
                 return;
             }
@@ -118,10 +121,10 @@ class Lexer {
     }
 
     isTwoCharOperator(): Bool {
-        return this.startsWith("==") || this.startsWith("!=") || this.startsWith("<=") || this.startsWith(">=") ||
-            this.startsWith("&&") || this.startsWith("||") || this.startsWith("++") || this.startsWith("--") ||
-            this.startsWith("+=") || this.startsWith("-=") || this.startsWith("*=") || this.startsWith("/=") ||
-            this.startsWith("%=") || this.startsWith("<<") || this.startsWith(">>")
+        return this.hasPrefix("==") || this.hasPrefix("!=") || this.hasPrefix("<=") || this.hasPrefix(">=") ||
+            this.hasPrefix("&&") || this.hasPrefix("||") || this.hasPrefix("++") || this.hasPrefix("--") ||
+            this.hasPrefix("+=") || this.hasPrefix("-=") || this.hasPrefix("*=") || this.hasPrefix("/=") ||
+            this.hasPrefix("%=") || this.hasPrefix("<<") || this.hasPrefix(">>")
     }
 
     isPunctuation(String c): Bool {
@@ -177,10 +180,10 @@ class Lexer {
             }
             var start = pos
             var kind = "identifier"
-            if (this.startsWith("//")) {
+            if (this.hasPrefix("//")) {
                 kind = "comment"
                 this.scanToLineEnd()
-            } else if (this.startsWith("/*")) {
+            } else if (this.hasPrefix("/*")) {
                 kind = "comment"
                 this.scanBlock()
             } else if (c == "\"") {
@@ -198,7 +201,7 @@ class Lexer {
                 this.scanNumber()
             } else if (this.isIdentStart(c)) {
                 kind = this.classify(this.scanIdentifier(start))
-            } else if (this.startsWith(">>>")) {
+            } else if (this.hasPrefix(">>>")) {
                 pos = pos + 3
                 kind = "operator"
             } else if (this.isTwoCharOperator()) {
