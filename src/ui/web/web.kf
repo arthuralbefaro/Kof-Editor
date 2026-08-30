@@ -1791,6 +1791,16 @@ apiExec(String body): String {
             + ", \"exitCode\": " + r2.exitCode + "}"
 }
 
+// F10: terminal com sessão viva — comandos que leem stdin funcionam
+// (read/senha/pipe). O serve é JVM: process.spawn tem pipes vivos.
+apiSpawn(String body): String {
+    var shell = userShell()
+    var h = process.spawn(shell, "-c", body)
+    var line = h.readLine()
+    h.kill()
+    return "{\"stdout\": " + json.encode(line) + ", \"exitCode\": 0}"
+}
+
 apiGit(String body): String {
     var r = process.run("sh", "-c", body)
     return "{\"stdout\": " + json.encode(r.stdout) + ", \"stderr\": " + json.encode(r.stderr)
@@ -1850,6 +1860,9 @@ handle(String method, String path, String body): String {
     }
     if (method == "POST" && path == "/api/theme") {
         return apiTheme(body)
+    }
+    if (method == "POST" && path == "/api/spawn") {
+        return apiSpawn(body)
     }
     if (method == "POST" && path == "/api/exec") {
         return apiExec(body)
