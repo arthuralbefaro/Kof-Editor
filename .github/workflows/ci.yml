@@ -1,0 +1,22 @@
+name: CI (build + check)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kof
+        run: |
+          curl -L https://github.com/KofLang/Kof4j/releases/latest/download/kof-linux.tar.gz -o kof.tar.gz
+          tar xzf kof.tar.gz
+          echo "$PWD/kof/bin" >> "$GITHUB_PATH"
+      - name: Combine + check (web)
+        run: |
+          bash scripts/web-combine.sh
+          kof check build/editor-web.kf
