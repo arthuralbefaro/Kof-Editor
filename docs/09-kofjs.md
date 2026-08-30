@@ -1,10 +1,12 @@
 # 09 — Contrato com o KofJS (front universal)
 
 > Status: contrato definido e **já implementado para a janela nativa JVM**.
-> O backend KofJS existe e está **alpha funcional** (`0.0.14-alpha`): a mesma
+> O backend KofJS está **alpha funcional** (`0.2.3-beta`): a mesma
 > IR gera ES Modules executados na GraalJS embarcada (sem Node.js), com
 > source maps, e a UI oficial da linguagem (`kof.ui`) renderiza por KofJS
 > dentro do webview nativo `bin/kof-webview` (WebKitGTK).
+> O **núcleo do editor roda no target `js`** (7 seções idênticas à JVM —
+> revalidado 29/08/2026).
 > Quando o front declarativo do editor migrar para `kof.ui`, ele compila para
 > o navegador/janela **sem JavaScript manual** — e o mesmo contrato roda
 > embutido na janela nativa.
@@ -33,20 +35,23 @@ navegador. Hoje o host é `src/ui/jvm/KofDomHost.java` (interpreta o DOM em
 Swing); amanhã o KofJS renderiza o mesmo DOM direto, no browser ou na
 janela.
 
-## Estado do KofJS (0.0.14-alpha — alpha funcional)
+## Estado do KofJS (0.2.3-beta — alpha funcional)
 
 - `kof build --target js` / `kof run --target js`: mesma IR → ESM (ES2022+)
   executado na GraalJS **embarcada** no jar (sem Node.js nem runtime externo)
 - Funciona: classes/herança/records/interfaces, `List<T>`/String API/arrays,
   JSON, exceções, lambdas **com capturas**, if-expressions, `kof.io`,
-  `kof.time`, source maps (`<name>.mjs.map`), for/while/do-while (J6 resolvido)
+  `kof.time`, source maps, for/while/do-while, `enum`, `Set`, pattern
+  matching, higher-order, `spawn`/`await` (`Handle<T>`), null safety
 - IO delega para Java via `kof_platform` (`KofJsRunner`) — J2 resolvido
+- **Núcleo do editor no KofJS**: as 7 seções do `editor.kf` rodam no
+  `--target js` com saída idêntica à JVM (revalidado 29/08/2026)
 - **UI oficial**: widgets `kof.ui` (`Window`/`Label`/`Button`/`Input`/
-  `Column`/`Row`/`View`/`Style`, bind + ações por lambda; `22fd027` adicionou
-  `Link`/`Image`/`Icon`/`Font`) renderizam DOM no webview nativo
-  `bin/kof-webview` ou no browser
-- Bloqueios remanescentes: reverificar o editor completo no JsBackend (J4) e
-  `\n` literais no runtime JS gerado (J5) — ver [08 — Restrições](08-restricoes-kof.md)
+  `Column`/`Row`/`View`/`Style`, bind + ações por lambda; `Link`/`Image`/
+  `Icon`/`Font`) renderizam DOM no webview nativo `bin/kof-webview` ou no
+  browser
+- Bloqueios remanescentes: regressões gerais do 0.2.3-beta (R1-R6) — ver
+  [08 — Restrições](08-restricoes-kof.md); no JS em si o núcleo está OK
 
 ## O que o editor espera do KofJS
 
@@ -137,18 +142,20 @@ O host (`KofDomHost`) implementa o window manager do DOM Kof na janela:
 
 ## Dependências do KofJS (feedback para o Kof4j)
 
-Estado no 0.0.14-alpha:
+Estado no **0.2.3-beta** (29/08/2026):
 
 1. ~~Backend KofJS que compile Kof para o navegador~~ — ✅ existe (alpha,
-   GraalJS embarcada; browser via ESM + DOM shim). **Renderer embutido na
-   janela nativa** — ✅ chegou como `bin/kof-webview` (WebKitGTK): a UI é
-   KofJS rodando dentro da janela, sem navegador visível.
+   GraalJS embarcada; browser via ESM + DOM shim). **Núcleo do editor roda
+   no target `js`** (revalidado 29/08). **Renderer embutido na janela
+   nativa** — ✅ `bin/kof-webview` (WebKitGTK): a UI é KofJS rodando dentro
+   da janela, sem navegador visível.
 2. **DOM declarativo mínimo** — ⚠️ o Kof escolheu widgets `kof.ui`
    (`Window`/`Column`/`Row`/`Button`/`Input` com bind + ações) em vez de
    `page`/`text`; o editor deve migrar do contrato próprio (`renderApp`) para
    esses widgets quando possível.
-3. **`fetch`/`post` nativo** — ⚠️ `kof.http` client existe (JVM; HTTP002 no
-   native/JS) — cobre o caso híbrido (análise no servidor, render no client).
+3. **`fetch`/`post` nativo** — ✅ `kof.http` client existe em **JVM e JS**
+   (27/08: `Java HttpClient` via interop no JS); Native ainda `HTTP002`.
+   Cobre o caso híbrido (análise no servidor, render no client).
 4. Persistência local (IndexedDB via interop) para abrir/salvar — ❌ pendente.
 
 O editor está pronto para consumir tudo isso: o núcleo não muda, apenas o

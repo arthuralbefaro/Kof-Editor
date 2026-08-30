@@ -31,19 +31,28 @@ class Lexer {
     }
 
     isWhitespace(String c): Bool {
+        if (c == "") {
+            return false
+        }
         return " \t\n\r".contains(c)
     }
 
     isDigit(String c): Bool {
+        if (c == "") {
+            return false
+        }
         return "0123456789".contains(c)
     }
 
     isLetter(String c): Bool {
+        if (c == "") {
+            return false
+        }
         return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(c)
     }
 
     isIdentStart(String c): Bool {
-        return this.isLetter(c) || c == "_"
+        return this.isLetter(c) || c == "_" || c == "$"
     }
 
     scanToLineEnd() {
@@ -104,7 +113,22 @@ class Lexer {
         return false
     }
 
+    isHexDigit(String c): Bool {
+        return this.isDigit(c) || c == "a" || c == "b" || c == "c" || c == "d" || c == "e" || c == "f" ||
+            c == "A" || c == "B" || c == "C" || c == "D" || c == "E" || c == "F"
+    }
+
     scanNumber() {
+        if (this.peek() == "0" && this.pos + 1 < this.len) {
+            var next = src.substring(pos + 1, pos + 2)
+            if (next == "x" || next == "X") {
+                pos = pos + 2
+                while (this.isHexDigit(this.peek())) {
+                    pos++
+                }
+                return;
+            }
+        }
         while (this.isDigit(this.peek())) {
             pos++
         }
@@ -115,7 +139,18 @@ class Lexer {
             }
         }
         var c = this.peek()
-        if (c == "L" || c == "f" || c == "F" || c == "d" || c == "D") {
+        if (c == "e" || c == "E") {
+            pos++
+            c = this.peek()
+            if (c == "+" || c == "-") {
+                pos++
+            }
+            while (this.isDigit(this.peek())) {
+                pos++
+            }
+        }
+        c = this.peek()
+        if (c == "L" || c == "l" || c == "f" || c == "F" || c == "d" || c == "D") {
             pos++
         }
     }
@@ -124,11 +159,14 @@ class Lexer {
         return this.hasPrefix("==") || this.hasPrefix("!=") || this.hasPrefix("<=") || this.hasPrefix(">=") ||
             this.hasPrefix("&&") || this.hasPrefix("||") || this.hasPrefix("++") || this.hasPrefix("--") ||
             this.hasPrefix("+=") || this.hasPrefix("-=") || this.hasPrefix("*=") || this.hasPrefix("/=") ||
-            this.hasPrefix("%=") || this.hasPrefix("<<") || this.hasPrefix(">>")
+            this.hasPrefix("%=") || this.hasPrefix("<<") || this.hasPrefix(">>") ||
+            this.hasPrefix("->") || this.hasPrefix("=>") || this.hasPrefix("::") ||
+            this.hasPrefix("|=") || this.hasPrefix("&=") || this.hasPrefix("^=") ||
+            this.hasPrefix("<<=") || this.hasPrefix(">>=")
     }
 
     isPunctuation(String c): Bool {
-        return "()[]{},;:.".contains(c)
+        return "()[]{},;:.@".contains(c)
     }
 
     isSingleOperator(String c): Bool {
@@ -143,20 +181,26 @@ class Lexer {
     }
 
     isKeyword(String w): Bool {
-        return w == "class" || w == "interface" || w == "record" || w == "extends" || w == "implements" ||
+        return w == "class" || w == "interface" || w == "record" || w == "enum" ||
+            w == "entity" || w == "generated" || w == "unique" || w == "extends" || w == "implements" ||
+            w == "sealed" || w == "permits" ||
             w == "package" || w == "import" || w == "public" || w == "private" || w == "protected" ||
-            w == "static" || w == "final" || w == "abstract" || w == "native" || w == "default" || w == "override" ||
-            w == "new" || w == "this" || w == "super" || w == "return" || w == "throw" ||
+            w == "static" || w == "final" || w == "abstract" || w == "transient" || w == "volatile" ||
+            w == "synchronized" || w == "native" || w == "default" || w == "override" ||
+            w == "void" || w == "new" || w == "this" || w == "super" || w == "return" || w == "throw" ||
             w == "if" || w == "else" || w == "for" || w == "while" || w == "do" ||
             w == "switch" || w == "case" || w == "break" || w == "continue" ||
             w == "try" || w == "catch" || w == "finally" || w == "instanceof" || w == "as" ||
-            w == "fun" || w == "var" || w == "val" || w == "void" ||
+            w == "spawn" || w == "await" || w == "assert" ||
+            w == "var" || w == "val" ||
             w == "true" || w == "false" || w == "null"
     }
 
     isTypeName(String w): Bool {
         return w == "Bool" || w == "Byte" || w == "Short" || w == "Int" || w == "Long" ||
-            w == "Float" || w == "Double" || w == "Char" || w == "String"
+            w == "Float" || w == "Double" || w == "Char" || w == "String" ||
+            w == "bool" || w == "byte" || w == "short" || w == "int" || w == "long" ||
+            w == "float" || w == "double" || w == "char" || w == "string"
     }
 
     classify(String w): String {
@@ -201,12 +245,21 @@ class Lexer {
                 this.scanNumber()
             } else if (this.isIdentStart(c)) {
                 kind = this.classify(this.scanIdentifier(start))
+            } else if (this.hasPrefix(">>>=")) {
+                pos = pos + 4
+                kind = "operator"
             } else if (this.hasPrefix(">>>")) {
+                pos = pos + 3
+                kind = "operator"
+            } else if (this.hasPrefix("<<=") || this.hasPrefix(">>=")) {
                 pos = pos + 3
                 kind = "operator"
             } else if (this.isTwoCharOperator()) {
                 pos = pos + 2
                 kind = "operator"
+            } else if (c == "." && this.hasPrefix("..")) {
+                pos = pos + 3
+                kind = "punctuation"
             } else if (this.isPunctuation(c)) {
                 pos++
                 kind = "punctuation"

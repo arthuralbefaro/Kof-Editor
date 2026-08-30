@@ -85,6 +85,8 @@ pageHtml(): String {
         "      <span class=\"ptab\" data-panel=\"output\" id=\"ptab-output\">OUTPUT</span>\n" +
         "      <span class=\"ptab active\" data-panel=\"terminal\" id=\"ptab-terminal\">TERMINAL</span>\n" +
         "      <span class=\"ptab\" data-panel=\"git\" id=\"ptab-git\">GIT</span>\n" +
+        "      <span class=\"ptab\" id=\"ptab-run\">RUN ▶</span>\n" +
+        "      <span class=\"ptab\" id=\"ptab-check\">CHECK ✓</span>\n" +
         "      <span class=\"ptab-close\" id=\"panel-close\" title=\"Fechar panel (Ctrl+`)\">×</span>\n" +
         "    </div>\n" +
         "    <div id=\"problems\" class=\"panel-body\"></div>\n" +
@@ -696,8 +698,10 @@ pageJs(): String {
         "    ' (at your option) any later version.';\n" +
         "}\n" +
         "var TEMPLATES = {\n" +
-        "  kof: '// novo.kf\\n//\\n// ' + license() + '\\n//\\n\\nrecord Point(Int x, Int y)\\n\\nmain() {\\n' +\n" +
-        "    '    var p = new Point(3, 7)\\n    println(\"ponto: \" + p.x() + \",\" + p.y())\\n}\\n',\n" +
+        "  kof: '// novo.kf\\n//\\n// ' + license() + '\\n//\\n\\nrecord Point(Int x, Int y)\\n\\nenum Status { Ok, Fail }\\n\\nmain() {\\n' +\n" +
+        "    '    var p = Point(3, 7)\\n    var nums = listOf(1, 2, 3)\\n    var dobro = nums.map((n: Int) -> n * 2)\\n' +\n" +
+        "    '    println(\"ponto: \" + p.x() + \",\" + p.y())\\n    println(\"dobro: \" + dobro)\\n' +\n" +
+        "    '    test \"soma\" {\\n        assert(2 + 2 == 4)\\n    }\\n}\\n',\n" +
         "  java: '/*\\n * novo.java\\n *\\n * ' + license() + '\\n */\\n\\npublic class Novo {\\n' +\n" +
         "    '    public static void main(String[] args) {\\n        System.out.println(\"Olá, Kof!\");\\n    }\\n}\\n',\n" +
         "  c: '/*\\n * novo.c\\n *\\n * ' + license() + '\\n */\\n\\n#include <stdio.h>\\n\\nint main(void) {\\n' +\n" +
@@ -881,11 +885,16 @@ pageJs(): String {
         "  { label: 'Alternar tema', run: toggleTheme },\n" +
         "  { label: 'Zoom +', run: function() { zoom(1); } },\n" +
         "  { label: 'Zoom -', run: function() { zoom(-1); } },\n" +
-        "  { label: 'Inserir snippet: foreach', run: function() { insertSnippet('for (var i = 0; i < n; i++) {\\n\\t\\n}'); } },\n" +
+        "  { label: 'Inserir snippet: main', run: function() { insertSnippet('main() {\\n\\t\\n}'); } },\n" +
+        "  { label: 'Inserir snippet: funcao', run: function() { insertSnippet('nome(args) {\\n\\t\\n}'); } },\n" +
         "  { label: 'Inserir snippet: if', run: function() { insertSnippet('if (cond) {\\n\\t\\n}'); } },\n" +
-        "  { label: 'Inserir snippet: fun', run: function() { insertSnippet('fun nome(args): String {\\n\\treturn \"\"\\n}'); } },\n" +
+        "  { label: 'Inserir snippet: foreach', run: function() { insertSnippet('for (var i = 0; i < n; i++) {\\n\\t\\n}'); } },\n" +
+        "  { label: 'Inserir snippet: while', run: function() { insertSnippet('while (cond) {\\n\\t\\n}'); } },\n" +
         "  { label: 'Inserir snippet: class', run: function() { insertSnippet('class Nome {\\n\\t\\n}'); } },\n" +
-        "  { label: 'Inserir snippet: while', run: function() { insertSnippet('while (cond) {\\n\\t\\n}'); } }\n" +
+        "  { label: 'Inserir snippet: record', run: function() { insertSnippet('record Nome(String campo)'); } },\n" +
+        "  { label: 'Inserir snippet: enum', run: function() { insertSnippet('enum Nome { A, B }'); } },\n" +
+        "  { label: 'Inserir snippet: test', run: function() { insertSnippet('test \"nome\" {\\n\\tassert(true)\\n}'); } },\n" +
+        "  { label: 'Inserir snippet: spawn', run: function() { insertSnippet('spawn tarefa()'); } }\n" +
         "];\n" +
         "\n" +
         "function insertSnippet(s) {\n" +
@@ -1046,6 +1055,41 @@ pageJs(): String {
         "  document.getElementById('panel').style.display = 'none';\n" +
         "};\n" +
         "\n" +
+        "// ---- run / check do compilador real (kof run / kof check) ----\n" +
+        "var runTarget = 'jvm';\n" +
+        "function activePath() {\n" +
+        "  if (activeDoc < 0) return null;\n" +
+        "  var p = docs[activeDoc].path;\n" +
+        "  if (!p || p.indexOf('/') < 0) return null;\n" +
+        "  return p;\n" +
+        "}\n" +
+        "async function runActive() {\n" +
+        "  var p = activePath();\n" +
+        "  if (!p) { statusEl.textContent = 'salve o arquivo numa pasta primeiro'; return; }\n" +
+        "  showPanel('output');\n" +
+        "  var out = document.getElementById('output');\n" +
+        "  out.textContent = 'kof run ' + p + ' --target ' + runTarget + ' ...\\n';\n" +
+        "  var r = await fetch('/api/run', {method: 'POST', body: p + '\\n' + ta.value});\n" +
+        "  var j = await r.json();\n" +
+        "  out.textContent = (j.stdout || '') + (j.stderr || '') + '\\n[exit ' + j.exitCode + ']';\n" +
+        "}\n" +
+        "async function checkActive() {\n" +
+        "  var p = activePath();\n" +
+        "  if (!p) { statusEl.textContent = 'salve o arquivo numa pasta primeiro'; return; }\n" +
+        "  showPanel('output');\n" +
+        "  var out = document.getElementById('output');\n" +
+        "  var r = await fetch('/api/check', {method: 'POST', body: p + '\\n' + ta.value});\n" +
+        "  var j = await r.json();\n" +
+        "  out.textContent = 'kof check ' + p + '\\n' + j.output;\n" +
+        "}\n" +
+        "document.getElementById('ptab-run').onclick = runActive;\n" +
+        "document.getElementById('ptab-check').onclick = checkActive;\n" +
+        "document.getElementById('ptab-run').oncontextmenu = function(e) {\n" +
+        "  e.preventDefault();\n" +
+        "  runTarget = runTarget === 'jvm' ? 'js' : 'jvm';\n" +
+        "  statusEl.textContent = 'target: ' + runTarget;\n" +
+        "};\n" +
+        "\n" +
         "// ---- divisórias arrastáveis ----\n" +
         "var side = document.getElementById('sidebar');\n" +
         "var sideGrip = document.getElementById('side-grip');\n" +
@@ -1180,7 +1224,7 @@ pageJs(): String {
         "  var out = [];\n" +
         "  for (var i = 0; i < lines.length; i++) {\n" +
         "    var t = lines[i].trim();\n" +
-        "    var m = t.match(/^(class|record|interface|fun)\\s+([A-Za-z_][A-Za-z0-9_]*)/);\n" +
+        "    var m = t.match(/^(class|record|interface|enum|entity)\\s+([A-Za-z_][A-Za-z0-9_]*)/);\n" +
         "    if (m) { out.push({label: m[1] + ' ' + m[2], line: i + 1, kind: m[1]}); continue; }\n" +
         "    m = t.match(/^([A-Za-z_][A-Za-z0-9_]*)\\([^)]*\\)\\s*(:([A-Za-z0-9_<>\\[\\], ]+))?\\s*\\{?$/);\n" +
         "    if (m) out.push({label: m[1] + '(...)' + (m[2] || ''), line: i + 1, kind: 'fn'});\n" +
@@ -1195,11 +1239,13 @@ pageJs(): String {
         "  if (!m) return;\n" +
         "  var word = m[0];\n" +
         "  var prefix = before.slice(0, before.length - word.length);\n" +
-        "  var KEYS = ['class', 'record', 'interface', 'fun', 'var', 'val', 'if', 'else', 'for', 'while',\n" +
-        "    'return', 'import', 'public', 'private', 'static', 'this', 'super', 'new', 'break', 'continue',\n" +
-        "    'try', 'catch', 'finally', 'throw', 'switch', 'case', 'default', 'do', 'in', 'true', 'false',\n" +
-        "    'Int', 'String', 'Bool', 'Long', 'Double', 'Float', 'Char', 'listOf', 'println', 'print',\n" +
-        "    'assert', 'spawn', 'process', 'json', 'web'];\n" +
+        "  var KEYS = ['class', 'record', 'interface', 'enum', 'entity', 'var', 'val', 'if', 'else', 'for', 'while',\n" +
+        "    'return', 'import', 'public', 'private', 'protected', 'static', 'this', 'super', 'new', 'break', 'continue',\n" +
+        "    'try', 'catch', 'finally', 'throw', 'switch', 'case', 'default', 'do', 'in', 'true', 'false', 'null',\n" +
+        "    'Int', 'String', 'Bool', 'Long', 'Double', 'Float', 'Char', 'listOf', 'mapOf', 'setOf',\n" +
+        "    'println', 'print', 'readLine', 'assert', 'spawn', 'await', 'test', 'constructor',\n" +
+        "    'extends', 'implements', 'instanceof', 'as', 'package', 'override',\n" +
+        "    'json', 'File', 'Path', 'Directory', 'process', 'config', 'log', 'http', 'web', 'db', 'orm', 'cache'];\n" +
         "  var words = KEYS.concat(docSymbols().map(function(s) { return s.label.split(' ')[0]; }));\n" +
         "  var seen = {};\n" +
         "  var best = null;\n" +
@@ -1318,6 +1364,17 @@ apiWrite(String body): String {
         return "ok"
     }
     return "erro"
+}
+
+saveTempDoc(String body): String {
+    var nl = body.indexOf("\n")
+    if (nl < 0) {
+        return ""
+    }
+    var path = body.substring(0, nl)
+    var content = body.substring(nl + 1, body.length())
+    File(path).writeText(content)
+    return path
 }
 
 apiSearch(String body): String {
@@ -1483,6 +1540,13 @@ handle(String method, String path, String body): String {
     }
     if (method == "POST" && path == "/api/write") {
         return apiWrite(body)
+    }
+    if (method == "POST" && path == "/api/check") {
+        return kofCheck(body)
+    }
+    if (method == "POST" && path == "/api/run") {
+        var nl = body.indexOf("\n")
+        return kofRun(saveTempDoc(body), "jvm")
     }
     return null
 }

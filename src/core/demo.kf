@@ -12,10 +12,16 @@ sampleKofSource(): String {
         "    }\n" +
         "}\n" +
         "\n" +
+        "enum Status { Open, Closed }\n" +
+        "\n" +
         "main() {\n" +
         "    var c = Circle(2.5)\n" +
         "    println(\"area: \" + c.area())\n" +
-        "    @corrupt\n" +
+        "    var m = mapOf(\"k\", 1)\n" +
+        "    spawn tarefa()\n" +
+        "    var h = 0xFF00FF\n" +
+        "    String? s = null\n" +
+        "    # nota invalida\n" +
         "}\n"
 }
 

@@ -1,9 +1,89 @@
 # 08 — O que falta no Kof para o editor (fonte do prompt)
 
-> Última verificação: **0.1.0-beta** (`025a5fd`, 25/08/2026) — **build local e
-> repros executados**. O núcleo do editor mantém **paridade byte a byte nos
-> 3 targets**. Cada item tem repro mínimo e impacto no editor. Corrigidos
-> ficam no histórico.
+> Última verificação: **0.2.3-beta + fixes locais** (`3c4f280`, 30/08/2026,
+> branch `fixes-for-kof-editor`) — **build local, `mvn clean test` 669/669 e
+> repros executados nos 3 targets**. Cada item tem repro mínimo e impacto no
+> editor. Corrigidos ficam no histórico.
+
+## Fixes locais aplicados (29–30/08/2026 — branch fixes-for-kof-editor)
+
+| Fix | Commits | Repro validado |
+|-----|---------|----------------|
+| **R2 — `mapOf(k,v)`** criava Map vazio (args ignorados) + POP/VOID no `kof_map_put` (JVM) + mid-expression no `handleMapOp` (JS) | `8dc4644` | `mapOf("a",1).get("a")=1` nos 3 targets |
+| **R3 — null safety `String?`** — `comparisonOperandType` preserva ref (null-literal decide ref; Unknown=INT); `VarDeclStmt` unwrap Nullable; `KofConditionalJump`/`KofBinary` emitem `if_acmp*` | `8dc4644`+`9462a48` | `var s: String? = null; if (s != null)` → `isnull/len=2` nos 3 targets |
+| **R4 — `Box<T>` genérico** — `RecordDeclarationNode` perdia `typeParameters` (parser descartava); record resolve `T` via `resolveWithTypeParams` | `8dc4644` | `Box(42).get()=42` JVM/JS |
+| **Regressão**: Unknown como ref fazia `r.exitCode != 0` emitir `if_acmpeq` sobre int → Unknown voltou a ser INT no `isRef` (2 caminhos) | `9462a48` | `process.run().exitCode` + `lastSlash >= 0` |
+| **`String.lastIndexOf`** faltava no `stringMethodSignature` → `()Ljava/lang/Object;` | `3c4f280` | `path.lastIndexOf("/")` → Int |
+| **String API no SemanticAnalyzer** — `indexOf/lastIndexOf/length/compareTo/isEmpty` inferem Int/Bool (var local de `s.lastIndexOf(x)` era Unknown) | `3c4f280` | `var idx = s.lastIndexOf("b"); idx >= 0` |
+| **Comparação contra null no KofBinary** — `got == null` (m.get() Unknown) usava accType → `if_icmpeq` sobre ref; agora usa lado não-null ou Object | `3c4f280` | `mapOf("a",1).get("a") == null` → false |
+
+Suíte: **`mvn clean test` 669/669** (456 compiler + 8 script + 5 C-compiler).
+
+## Estado do par dos 3 targets (0.2.3-beta + fixes)
+
+```text
+JVM   : núcleo completo OK (7 seções) — Map/null/Box/String API corrigidos
+Native: scanner completo CRASH (R1) — repro byte-exato; substring(end>len) crasha; record-genérico segfault
+JS    : núcleo completo OK (7 seções)
+```
+
+## R1 — aberto (NativeBackend)
+
+Repro byte-exato: o `Lexer.tokenize()` do editor crasha no ELF quando o
+**input tem 1 char a mais** (x172 roda `tokens=7`; y173 — idêntico + `0`
+no fim — dá `Runtime error: array index out of bounds`). Não é conteúdo
+(variantes `0/1/x/"/"` todas crasham com 173 chars). Suspeita: jump
+table/labels de método grande no NativeBackend. Repros em
+`/tmp/opencode/kof-repros2/` (r1x172 = OK, r1y173 = crash).
+Mismatches semânticos relacionados: `substring(end > len)` crasha no
+native (JVM lança exceção catchável) e `#`+identificador hangou no
+0.2.3-beta original (re-testar com os fixes).
+
+## Verificação 0.2.3-beta (29/08/2026 — repros executados)
+
+### Corrigidos upstream (repros passam)
+
+| Item | Repro | Resultado |
+|------|-------|-----------|
+| **F3 — módulos multi-arquivo (JVM/JS)** | `import a.b.C` + `main()` num dir com `a/b/C.kf` | ✅ `hi from a.b.C` na JVM e no JS; **Native ainda quebra** (`COMP001: undefined reference`) |
+| **F6 — JSON de objetos no Native** | `json.decode<Point>` + `json.encode(Point)` | ✅ `pt: 1,2` / `enc: {"x":3,"y":4}` no native (JSN002 fechado) |
+| **enum** | `enum Color { Red }` + `switch` exaustivo + `name()` | ✅ 3 targets |
+| **Set** (`setOf`) | `setOf()+add+contains+size` | ✅ JVM/Native |
+| **pattern matching** (`case String s`) | `switch` c/ `case String str` | ✅ JVM/Native/JS |
+| **higher-order** (`listOf.map/filter/reduce`) | `nums.map((x:Int)->x*2)` | ✅ JVM/Native |
+| **`@` agora é token real** (annotation) | `@Kof` antes de `class` | ✅ compila; editor aceitou `@` como punctuation |
+
+### Regressões / bugs novos (repros mínimos + workaround)
+
+| # | Bug (0.2.3-beta) | Repro mínimo | Impacto no editor | Workaround |
+|---|------------------|--------------|-------------------|------------|
+| **R1** | **NATIVE: núcleo do editor crasha** — `Lexer.tokenize()` (o scanner completo c/ if/else + `List` + `substring`) → `Runtime error: array index out of bounds` (ou hang sem saída). Loop simples de `substring` isolado funciona; o `tokenize()` inteiro não | o `editor.kf` combinado no `--target native` (paridade 0.0.14 quebrou) | **o binário nativo do editor não roda mais** (seção [2] falha) | rodar na JVM/JS; repro mínimo enviado ao Kof4j |
+| **R2** | ~~**`mapOf(k, v)` quebra**~~ — **CORRIGIDO (`8dc4644`)** | `var m = mapOf("a", 1); m.get("a")` → `1` nos 3 targets | — | — |
+| **R3** | ~~**null safety `String?` VerifyError**~~ — **CORRIGIDO (`8dc4644`+`9462a48`)** | `var maybe: String? = null; if (maybe != null)` → OK nos 3 targets | — | — |
+| **R4** | ~~**`Box<T>` c/ primitivo VerifyError (JVM)**~~ — **CORRIGIDO (`8dc4644`)** na JVM/JS (native: segfault pré-existente em record-genérico) | `Box(42).get()` → `42` | — | — |
+| **R5** | **NATIVE: `substring` com `end > length` crasha** (`array index out of bounds`) em vez de encurtar/lançar exceção capturável — a JVM lança `StringIndexOutOfBoundsException` (catchável) | `s.substring(len, len+1)` | mismatch semântico JVM↔Native; lexers/parceiros que sondeiam o fim da string quebram no native | nunca passar `end > length` |
+| **R6** | **NATIVE: `#` (token de erro) + identificador → hang** (loop infinito, sem saída) | `new Lexer("#x").tokenize()` no native | qualquer diagnóstico de token inválido no native pode travar | tratar `#`/erro no lexer sem depender de `substring` fora de bounds |
+
+> Nota de diagnóstico: o launcher `bin/kof` **mascara `VerifyError` da JVM com
+> "os componentes de runtime do JavaFX não foram encontrados"** (o texto não
+> existe no jar nem no launcher — é o catch-all do run). Para ver o erro real,
+> compile `kof build --target jvm` e invoque a classe por reflexão
+> (`Class.forName(...).getMethod("main",...)`), que expõe o `VerifyError`.
+
+### Estado do par dos 3 targets (0.2.3-beta)
+
+```text
+JVM   : núcleo completo OK (7 seções)  — R2/R3/R4 impedem Map-par/null-safety/Box
+Native: núcleo CRASH na seção [2] (R1)  — R5/R6; F3/F6/enum/Set/pattern OK
+JS    : núcleo completo OK (7 seções)  — pattern matching + null OK
+```
+
+O núcleo foi **atualizado para a gramática 0.2.3-beta**: o `Lexer` do editor
+agora classifica `enum`/`spawn`/`await`/`assert`/`entity` (keywords), tipos
+minúsculos (`int`/`string`/`bool`...), números hex `0x...`/exponencial, `->`,
+`=>`, `::`, `<<=`, `>>=`, `>>>` e `@` (punctuation); `fun` voltou a ser
+identificador. A amostra do demo usa `enum`/`mapOf`/`spawn`/`0xFF00FF`/
+`String?` e o token inválido passou a ser `#` (LEX005) — `@` é token válido.
 
 ## Atualização `3329323`→`025a5fd` (25/08/2026 — G5 observability + G9 security)
 
@@ -127,10 +207,10 @@ kof run editor.kf            == kof build --target native (ELF) == node Default.
 |---|---------|-------------------|-------|
 | F1 | ~~Construtor primário `class Foo(Int x)`~~ — **LIBERADO** | B10 corrigido (0.0.7) + overload de construtores (0.0.14) | usar `class Foo(Int x)` idiomático |
 | F2 | ~~`args` de `main`~~ — **CORRIGIDO** | `main(String[] args)` + `kof run x.kf hello mundo` → `hello`/`mundo` | CLI do editor destravado | 
-| F3 | **Módulos multi-arquivo** (resolução de símbolos entre arquivos) | `combine.sh` concatena 9 módulos em 1 arquivo | fim do combine; avançou: `kof build <dir>` já compila múltiplos arquivos, falta semântica unificada (P1 do plano do Kof) |
+| F3 | **Módulos multi-arquivo** — **JVM/JS OK no 0.2.3-beta** (`import a.b.C` resolve) | `combine.sh` continua por enquanto; fim do combine **no native** | repro `hi from a.b.C` ✅ JVM/JS; **Native ainda `COMP001: undefined reference`** (R1-adjacente) |
 | F4 | ~~Processos (executar programas)~~ — **IMPLEMENTADO (`process.run`)** | Terminal/runner nativos do editor (Estágio 3) destravados | `var r = process.run("git", "status")` → Result(stdout, stderr, exitCode); virtual threads no 0.0.14 |
-| F5 | **`spawn` no target Native** | — | o próprio Kof documenta `CONC001` |
-| F6 | **JSON de objetos no NativeBackend** | `json.encode` de `Token`/`LanguageEntry` (hoje: JSON manual nas funções `*ToJson` do editor) | JVM suporta; native dá `JSN002` (arrays já fecharam via JSN003) |
+| F5 | **`spawn` no target Native** | — | `spawn`/`await` ✅ JVM/JS no 0.2.3-beta; Native ainda `CONC001` |
+| F6 | ~~**JSON de objetos no NativeBackend**~~ — **FECHADO no 0.2.3-beta** | `json.encode`/`decode<T>` de `record` | repro `pt: 1,2` / `enc: {"x":3,"y":4}` no native (JSN002 fechado) |
 | F7 | ~~String API no NativeBackend~~ — **CORRIGIDO** | length/charAt/substring etc. | ver histórico |
 | F8 | ~~Binding de janela~~ — **CHEGOU (`a8d0f3f`)** | `kof.ui Window/Label`: `Window("título")`, `w.title`, `w.bind(label)`, `w.show()`, `w.close()`; 0.0.14 adicionou size/font/bold/color e multi-janela; a UI renderiza por KofJS no webview nativo | a janela nativa do editor pode migrar para `Window` + `bin/kof-webview` |
 | F9 | ~~`kof_platform` no runtime JS~~ — **RESOLVIDO (runtime embarcado)** | IO delega para Java (`KofJsRunner`); browser continua DOM shim | J2 fechado |

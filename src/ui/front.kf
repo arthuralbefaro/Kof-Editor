@@ -56,6 +56,36 @@ writeDoc(String path, String content): Bool {
     return File(path).writeText(content)
 }
 
+kofCheck(String path): String {
+    var r = process.run("kof", "check", path)
+    var out = r.stdout + r.stderr
+    if (out.trim().length() == 0) {
+        out = "sem erros"
+    }
+    return "{\"ok\":" + (r.exitCode == 0) + ",\"output\":\"" + escapeJson(out) + "\"}"
+}
+
+kofRun(String path, String target): String {
+    // PKG002/B21: kof run <file> compila o DIRETÓRIO inteiro e exige um único
+    // main() entre todos os .kf da pasta. Copia o arquivo para um dir isolado
+    // para o RUN funcionar mesmo com vários .kf na pasta do usuário.
+    var name = path
+    var lastSlash = path.lastIndexOf("/")
+    if (lastSlash >= 0 && lastSlash + 1 < path.length()) {
+        name = path.substring(lastSlash + 1, path.length())
+    }
+    var runDir = "/tmp/kof-editor-run"
+    Directory(runDir).createDirectories()
+    Directory(runDir).list()
+    var copy = process.run("sh", "-c", "rm -f " + runDir + "/*.kf && cp " + path + " " + runDir + "/")
+    if (copy.exitCode != 0) {
+        return "{\"stdout\":\"\",\"stderr\":\"" + escapeJson(copy.stderr) + "\",\"exitCode\":" + copy.exitCode + "}"
+    }
+    var r = process.run("kof", "run", runDir + "/" + name, "--target", target)
+    return "{\"stdout\":\"" + escapeJson(r.stdout) + "\",\"stderr\":\"" + escapeJson(r.stderr) +
+        "\",\"exitCode\":" + r.exitCode + "}"
+}
+
 gitStatus(String dir): String {
     var r = process.run("git", "status", "--porcelain", "-b")
     if (r.exitCode != 0) {
@@ -205,22 +235,25 @@ outlineKf(String code): String {
         var t = tokens.get(i)
         if (offsetCol(code, t.start) == 1 && i + 1 < tokens.size()) {
             var n = tokens.get(i + 1)
-            if (t.kind == "keyword" && (t.text == "class" || t.text == "record" || t.text == "interface") && n.kind == "identifier") {
+            if (t.kind == "keyword" && (t.text == "class" || t.text == "record" || t.text == "interface" || t.text == "enum" || t.text == "entity") && n.kind == "identifier") {
                 if (!first) {
                     out = out + ","
                 }
                 first = false
-                out = out + "{\"kind\":\"type\",\"name\":\"" + n.text + "\",\"line\":" + offsetLine(code, t.start) + "}"
-            } else if ((t.kind == "keyword" && t.text == "fun" && n.kind == "identifier") || (t.kind == "identifier" && n.text == "(" && i + 2 < tokens.size() && tokens.get(i + 2).text != ":")) {
+                var kind = "type"
+                if (t.text == "enum") {
+                    kind = "enum"
+                }
+                if (t.text == "entity") {
+                    kind = "entity"
+                }
+                out = out + "{\"kind\":\"" + kind + "\",\"name\":\"" + n.text + "\",\"line\":" + offsetLine(code, t.start) + "}"
+            } else if (t.kind == "identifier" && n.text == "(" && i + 2 < tokens.size() && tokens.get(i + 2).text != ":") {
                 if (!first) {
                     out = out + ","
                 }
                 first = false
-                var fname = t.text
-                if (t.text == "fun") {
-                    fname = n.text
-                }
-                out = out + "{\"kind\":\"function\",\"name\":\"" + fname + "\",\"line\":" + offsetLine(code, t.start) + "}"
+                out = out + "{\"kind\":\"function\",\"name\":\"" + t.text + "\",\"line\":" + offsetLine(code, t.start) + "}"
             }
         }
     }
@@ -276,11 +309,21 @@ occurrencesJson(String code, String name): String {
 }
 
 keywordsJson(): String {
-    return json.encode(listOf("class", "interface", "record", "extends", "implements", "package",
-        "import", "public", "private", "protected", "static", "final", "abstract", "native",
-        "default", "override", "new", "this", "super", "return", "throw", "if", "else", "for",
-        "while", "do", "switch", "case", "break", "continue", "try", "catch", "finally",
-        "instanceof", "as", "var", "val", "void", "true", "false", "null"))
+    return json.encode(listOf("class", "interface", "record", "enum", "entity", "extends",
+        "implements", "sealed", "permits", "generated", "unique", "package", "import",
+        "public", "private", "protected", "static", "final", "abstract", "transient",
+        "volatile", "synchronized", "native", "default", "override", "void", "new", "this",
+        "super", "return", "throw", "if", "else", "for", "while", "do", "switch", "case",
+        "break", "continue", "try", "catch", "finally", "instanceof", "as", "spawn", "await",
+        "assert", "var", "val", "true", "false", "null"))
+}
+
+builtinsJson(): String {
+    return json.encode(listOf("listOf", "mapOf", "setOf", "println", "print", "readLine",
+        "json", "File", "Path", "Directory", "process", "config", "log", "http", "web",
+        "db", "orm", "cache", "security", "validation", "now", "sleep", "spawn", "test",
+        "constructor", "main", "Box", "Int", "Long", "Double", "Float", "Bool", "String",
+        "Char", "List", "Map", "Set"))
 }
 
 minInt(Int a, Int b): Int {

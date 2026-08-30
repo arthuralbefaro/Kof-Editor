@@ -38,8 +38,12 @@ escreve: o lexer de Kof é o lexer do editor.
 - **Terminal**: executa comandos via shell do host (não-interativo por ora)
 - **Paleta de comandos** (Ctrl+Shift+P), Quick Open (Ctrl+P), símbolos
   (Ctrl+Shift+O), snippets, busca por arquivo e por texto
-- **Compilado para JVM, nativo Linux e KofJS com paridade byte a byte**
-  (núcleo verificado nos 3 targets) — release via `scripts/release.sh`
+- **Núcleo rodando na JVM e no KofJS** (GraalJS) — revalidado no
+  **Kof 0.2.3-beta** (29/08/2026), saída idêntica nos dois. O target
+  **nativo regrediu** nesse release (o scanner completo cracha no ELF —
+  regressão R1 do NativeBackend; ver
+  [`docs/08-restricoes-kof.md`](docs/08-restricoes-kof.md)); no Kof 0.0.14 o
+  ELF rodava com paridade byte a byte. Release via `scripts/release.sh`
 
 ```bash
 kof-editor              # abre a janela

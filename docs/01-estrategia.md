@@ -51,22 +51,25 @@ texto plano estão no registry e entram em estágios futuros. A regra:
 
 ## Estratégia de construção (estágios)
 
-A linguagem Kof ainda está em alpha (`0.0.14-alpha`). A estratégia é **construir o
+A linguagem Kof está em beta (`0.2.3-beta`). A estratégia é **construir o
 editor em paralelo com a linguagem**, entregando em cada estágio apenas o
 que o Kof consegue compilar hoje, e marcando explicitamente o que depende de
-features futuras (ver [02 — Etapas](02-etapas.md) e
-[08 — Restrições](08-restricoes-kof.md)).
+features futuras — e os **regressões** que cada novo release traz (ver
+[02 — Etapas](02-etapas.md) e [08 — Restrições](08-restricoes-kof.md),
+R1-R6).
 
 Três consequências práticas:
 
 1. **Núcleo primeiro**: lexer, tokens, buffer, registry — nada de UI antes
    do núcleo funcionar. É o que existe hoje (Estágio 1).
 2. **Cross-target por design**: nenhum módulo pode assumir "estou na JVM".
-   JSON de objetos, por exemplo, é JVM-only hoje — o código que o usa é
-   isolado para não vazar para o nativo.
-3. **Workarounds documentados**: quando o compilador Kof tem um bug, o
-   código contorna e o bug vira item de documentação e feedback para o
-   Kof4j (ver [08 — Restrições](08-restricoes-kof.md)).
+   No 0.2.3-beta o JSON de objetos passou a existir no native, mas a
+   regressão R1 (scanner cracha no ELF) ainda força isolar o caminho nativo
+   até o fix do NativeBackend.
+3. **Workarounds documentados**: quando o compilador Kof tem um bug
+   (ou uma regressão, como R1-R6 no 0.2.3-beta), o código contorna e o bug
+   vira item de documentação e feedback para o Kof4j (ver
+   [08 — Restrições](08-restricoes-kof.md)).
 
 ## Decisões deliberadas
 

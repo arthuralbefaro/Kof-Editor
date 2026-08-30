@@ -38,24 +38,30 @@ Entrega: o **cérebro** do editor, compilando e rodando na JVM.
 
 Validação: `scripts/run.sh` imprime as 7 seções da demo (registry, highlight,
 tabela de tokens, diagnostics, JSON, buffer).
-**Verificado em 24/08/2026 (Kof 0.0.14): paridade byte a byte nos 3 targets**
-— a mesma demo roda idêntica na JVM, no ELF nativo (`kof build --target
-native`) e no KofJS (`node Default.mjs`).
+**Verificado em 29/08/2026 (Kof 0.2.3-beta): núcleo roda na JVM e no KofJS**
+(`--target js`) com saída idêntica. A paridade byte a byte dos **3 targets**
+era válida no Kof 0.0.14 (24/08/2026); o **Native regrediu** no 0.2.3-beta —
+o scanner completo cracha no ELF (R1; ver 08).
 
-## Estágio 1+ — Desbloqueios do Kof ✅ (maioria resolvida no 0.0.14)
+## Estágio 1+ — Desbloqueios do Kof ✅ (estado verificado contra 0.2.3-beta, 29/08)
 
 Features da linguagem necessárias para o Estágio 2 e além
-(itens de feedback para o Kof4j — estado verificado contra 0.0.14-alpha):
+(itens de feedback para o Kof4j — estado verificado contra 0.2.3-beta):
 
-| Feature do Kof | Usada para | Hoje |
+| Feature do Kof | Usada para | Hoje (0.2.3-beta) |
 |----------------|------------|------|
 | Escape `\u001b` em literais | Cores ANSI reais no highlight | ✅ corrigido (`ansi()` usa o escape direto, JVM e native) |
-| API de String no NativeBackend (`length`, `substring`, concat) | Editor rodar em binário nativo | ✅ corrigido |
-| JSON de objetos no NativeBackend | Registry/estado serializado no nativo | ❌ `JSN002` (arrays já fecharam via JSN003) |
-| Módulos multi-arquivo | Fim do `combine.sh`; módulos reais `core/`, `ui/`, `term/` | ❌ cross-file não resolve (`kof build <dir>` compila múltiplos arquivos, sem semântica unificada — P1 do plano do Kof) |
+| API de String no NativeBackend (`length`, `substring`, concat) | Editor rodar em binário nativo | ⚠️ API existe, mas `substring(end>len)` crasha (R5) e o scanner completo cracha no native (R1) |
+| JSON de objetos no NativeBackend | Registry/estado serializado no nativo | ✅ **fechado no 0.2.3-beta** (repro `json.decode<Point>` no native) |
+| Módulos multi-arquivo | Fim do `combine.sh`; módulos reais `core/`, `ui/`, `term/` | ✅ **JVM/JS no 0.2.3-beta** (`import a.b.C` resolve); ❌ Native ainda `COMP001` |
 | E/S de arquivos e args de `main` | Abrir/salvar arquivos, CLI do editor | ✅ `kof.io` (File/Path/Directory) + `main(String[] args)` |
-| Tipos genéricos `List<T>` reais | Eliminar workarounds de cadeias ligadas | ✅ |
+| Tipos genéricos `List<T>` reais | Eliminar workarounds de cadeias ligadas | ✅ (`Box<T>` com primitivo regrediu na JVM — R4) |
 | Processos (executar programas) | Terminal e runner nativos | ✅ `process.run(...)` → Result(stdout, stderr, exitCode) |
+| Concorrência (`spawn`/`await`) | Execução concorrente no editor | ✅ JVM/JS (`Handle<T>` tipado); Native `CONC001` |
+| `enum`, `Map`/`Set`, `String?`, pattern matching | Idiomas do 0.1.0/0.2.0 | ⚠️ `enum`/`Set`/pattern ✅; `mapOf(k,v)` quebra (R2); `String?` VerifyError na JVM (R3) |
+
+> Regressões do 0.2.3-beta detalhadas em [08 — Restrições](08-restricoes-kof.md)
+> (R1-R6). O núcleo foi atualizado para a gramática 0.2.3-beta (lexer).
 
 ## Estágio 2 — Arquivo e sessão ⏳ (destravado: kof.io + main(args))
 
@@ -104,11 +110,14 @@ Critério: primeira versão "usável" na JVM.
 - Multi-linguagem: Markdown e JSON ganham lexers completos;
   texto plano com detecção básica
 
-## Estágio 6 — Editor nativo ✅ (destravado e verificado no 0.0.14)
+## Estágio 6 — Editor nativo ⚠️ (regrediu no 0.2.3-beta)
 
-- ~~Build `--target native` do editor completo (ELF autônomo)~~ — **o núcleo
-  compila e roda no ELF com saída idêntica à JVM** (verificado 24/08/2026)
-- Mesmo comportamento observável do Estágio 4/5
+- Build `--target native` do editor (ELF) — **o núcleo compilava e rodava
+  idêntico à JVM no Kof 0.0.14** (verificado 24/08/2026). No **0.2.3-beta o
+  scanner completo (`Lexer.tokenize`) cracha no ELF** com `array index out of
+  bounds` (R1) — o binário nativo do editor está bloqueado até o fix do
+  NativeBackend.
+- Mesmo comportamento observável do Estágio 4/5 (quando o R1 resolver)
 - Terminal nativo com syscalls (via runtime Kof)
 - Release binária: um binário, zero dependências
 
@@ -135,12 +144,13 @@ O contrato com o KofJS está definido em [09 — Contrato KofJS](09-kofjs.md).
 
 ## Dependências externas (roadmap do Kof4j que destrava o editor)
 
-Estado verificado contra 0.0.14-alpha (24/08/2026):
+Estado verificado contra **0.2.3-beta** (29/08/2026):
 
-1. ~~String API completa no NativeBackend~~ — ✅ **corrigido** — Estágio 6 destravado
-2. ~~Escape `\u001b` (e `\uXXXX`) em literais~~ — ✅ **corrigido**
-3. **Módulos multi-arquivo** — ❌ P1 do plano do Kof — **todos os estágios**
+1. ~~String API completa no NativeBackend~~ — ✅ corrigido (mas `substring(end>len)` crasha — R5)
+2. ~~Escape `\u001b` (e `\uXXXX`) em literais~~ — ✅ corrigido
+3. **Módulos multi-arquivo** — ✅ JVM/JS (0.2.3-beta); ❌ Native (`COMP001`) — Estágio 6 nativo
 4. ~~E/S de arquivos e args~~ — ✅ `kof.io` + `main(args)` — Estágio 2 destravado
 5. ~~Processos~~ — ✅ `process.run` — Estágio 3 destravado
-6. **JSON de objetos no native** — ❌ `JSN002` — Estágio 6 (fim do JSON manual)
+6. ~~JSON de objetos no native~~ — ✅ **fechado no 0.2.3-beta** (repro no native)
 7. Interop com Java para UI — ⚠️ parcial (annotations/SAM/externos funcionam no caminho Android/JVM; a janela nativa do editor pode usar `kof.ui` + webview)
+8. **Scanner completo no Native** — ❌ regressão (R1): o `Lexer.tokenize()` cracha no ELF no 0.2.3-beta; bloqueia o binário nativo do editor até o fix do NativeBackend

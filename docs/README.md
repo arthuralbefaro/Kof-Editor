@@ -19,8 +19,7 @@ de programação multi-target (JVM, nativo e web).
 | [04 — Linguagem Nativa](04-linguagem-nativa.md) | O sistema de reconhecimento de linguagens 100% nativo: lexer, highlight, diagnostics, autocomplete |
 | [05 — Terminal e Execução](05-terminal-execucao.md) | Terminal integrado, execução, build e targets nativos do editor |
 | [06 — Targets](06-targets.md) | JVM, nativo e web: como o mesmo editor é entregue em cada mundo |
-| [07 — Inspiração](07-inspiracao.md) | Principios de UX herdados de editores modernos (referencia na pasta `inspiracao/`, nao versionada) |
-| [08 — Estado Atual e Restrições](08-restricoes-kof.md) | O que roda hoje, bugs do compilador Kof encontrados, workarounds usados e dependências da linguagem |
+| [08 — Estado Atual e Restrições](08-restricoes-kof.md) | O que roda hoje (0.2.3-beta), regressões do Kof (R1-R6) com repros mínimos, workarounds e dependências da linguagem |
 | [09 — Contrato KofJS](09-kofjs.md) | O front web do editor: hoje via `kof serve`, e o contrato para quando o backend KofJS existir |
 | [10 — Roadmap](10-roadmap.md) | Lista viva de funcionalidades implementadas e o que ainda falta |
 
@@ -36,13 +35,19 @@ Release: `scripts/release.sh` (tarballs JVM/native em `dist/`) + pipeline
 
 ## Estado atual (Estágio 1)
 
-O núcleo do editor compila e roda na **JVM** (via `kof build --target jvm`):
+O núcleo do editor compila e roda na **JVM** (via `kof build --target jvm`) e
+no **KofJS** — revalidado no Kof 0.2.3-beta:
 
 - Registry de linguagens 100% nativo (Kof, JSON, Markdown, texto plano)
-- Lexer Kof completo em Kof (palavras-chave, tipos, strings, chars, números,
-  comentários, operadores, pontuação, tokens de erro)
+- Lexer Kof completo em Kof, **alinhado à gramática 0.2.3-beta**:
+  palavras-chave (`enum`, `spawn`, `await`, `assert`, `entity`...), tipos
+  maiúsculos **e minúsculos** (`Int`/`int`, `String`/`string`...), strings,
+  chars, números (dec/hex `0x`/exponencial), comentários, operadores
+  (`->`, `=>`, `::`, `<<=`, `>>=`, `>>>`), `@` (annotation), tokens de erro
 - Lexer JSON completo em Kof
-- Highlight de sintaxe com categorias alinhadas à grammar oficial (`source.kof`)
+- Highlight de sintaxe com as mesmas categorias da grammar oficial
+  (`source.kof`) — ⚠️ a grammar do Kof4j está defasada (falta `enum`/`spawn`/
+  `await`/`assert`/`mapOf`); o lexer do editor segue o **Lexer.java** real
 - Diagnostics nativos (erros de tokenização em tempo de edição)
 - JSON nativo (String/Int/List) sem bibliotecas
 - Buffer de documento com operações de insert/delete
@@ -55,9 +60,12 @@ janela nativa (WebKitGTK) com o front servido por `kof serve`: abas,
 explorer, terminal (com comandos TUI via `script` + `cleanTty` em Kof),
 git, temas e "Abrir pasta..." com diálogo nativo (zenity).
 
-O target **nativo** roda o núcleo completo (ELF estático) e o **KofJS** roda
-o mesmo núcleo em `node`/GraalJS — **paridade byte a byte com a JVM,
-verificada em 24/08/2026 contra o Kof 0.0.14**. O **web** roda via `kof serve`
+O **JVM** e o **KofJS** (GraalJS embarcada) rodam o núcleo completo —
+revalidado em **29/08/2026 contra o Kof 0.2.3-beta** (7 seções idênticas).
+O target **nativo** ainda **crasha na seção [2]** no 0.2.3-beta (regressão do
+NativeBackend no scanner completo — ver
+[08 — Restrições](08-restricoes-kof.md), R1); a paridade byte a byte dos 3
+targets era válida no Kof 0.0.14 (24/08/2026). O **web** roda via `kof serve`
 com o cérebro Kof no servidor; o front declarativo em Kof aguarda a adoção
 dos widgets `kof.ui` (ver [09 — Contrato KofJS](09-kofjs.md)).
 
@@ -69,7 +77,7 @@ scripts/build.sh        # combina e gera build/out
 ```
 
 O compilador `kof` usado deve ser a versão em desenvolvimento do Kof
-(release `0.0.14-alpha` atual ou superior). A variável `KOF` pode apontar para
+(release **`0.2.3-beta`** atual ou superior). A variável `KOF` pode apontar para
 o binário desejado:
 
 ```bash

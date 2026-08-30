@@ -25,23 +25,25 @@ A API do registry é a porta de entrada de **qualquer** linguagem futura:
 adicionar uma linguagem é escrever um lexer em Kof e registrá-lo — nunca
 distribuir um script.
 
-## Categorias de tokens (alinhadas à grammar oficial)
+## Categorias de tokens (alinhadas ao lexer real do compilador)
 
-O Kof distribui a grammar `editor/kof.tmLanguage.json` (scope `source.kof`).
-O editor usa exatamente as mesmas categorias, para que highlight e
-compilador nunca divirjam:
+⚠️ A grammar TextMate `editor/kof.tmLanguage.json` (scope `source.kof`) está
+**defasada** em relação ao Kof 0.2.3-beta: falta `enum`, `spawn`, `await`,
+`assert`, `entity`, `mapOf`/`setOf`/`listOf`, tipos minúsculos e `@`. A fonte
+de verdade é o **`dev.kof.compiler.Lexer`** (`Lexer.java`). O lexer do editor
+segue esse arquivo — as categorias abaixo espelham os `TokenType`s reais:
 
-| Categoria do editor | Scope da grammar |
-|---------------------|------------------|
-| `comment` | `comment.line.double-slash.kof`, `comment.block.kof` |
-| `string` | `string.quoted.double.kof` |
-| `char` | `string.quoted.single.kof` |
-| `number` | `constant.numeric.kof` |
-| `keyword` | `keyword.control.kof`, `keyword.declaration.kof`, `constant.language.kof` |
-| `type` | `storage.type.kof` |
-| `operator` | `keyword.operator.*.kof` |
-| `punctuation` | (parte do highlight estrutural) |
-| `error` | não existe na grammar — é do frontend nativo |
+| Categoria do editor | `TokenType` do `Lexer.java` (0.2.3-beta) |
+|---------------------|-------------------------------------------|
+| `comment` | `//` e `/* */` (skip, não tokeniza; exibido como `comment`) |
+| `string` | `STRING_LITERAL` |
+| `char` | `CHAR_LITERAL` |
+| `number` | `INT/LONG/FLOAT/DOUBLE_LITERAL` (dec, hex `0x`, exponencial) |
+| `keyword` | `CLASS/INTERFACE/RECORD/ENUM/ENTITY/...`, `IF/FOR/WHILE/...`, `SPAWN/AWAIT/ASSERT/...`, `TRUE/FALSE/NULL` |
+| `type` | `BOOL/INT/LONG/..._TYPE` (maiúsculo **e** minúsculo) |
+| `operator` | `PLUS/MINUS/...`, `ARROW(->)`, `DOUBLE_ARROW(=>)`, `SHIFT_*` (`<<=`,`>>=`,`>>>`) |
+| `punctuation` | `LPAREN/.../DOT`, `ELLIPSIS(..)`, `COLON_COLON(::)`, `AT(@)` |
+| `error` | `ERROR` / `LEX005` (ex.: `#`) — é do frontend nativo |
 
 `error` é a categoria que editores convencionais só conseguem com LSP; no Kof Editor ela
 nasce no lexer.
@@ -76,10 +78,11 @@ aceita, porque a fonte é a mesma.
 
 ## Por que não LSP?
 
-O Kof já tem `kof lsp` (ver `docs/tooling/LSP.md` do Kof4j). Para o
-Nesses editores, o LSP é a única via. Para o Kof Editor, o LSP é um caminho
-**desnecessário**: o frontend oficial vive no mesmo ecossistema, e o editor
-pode consumir a análise diretamente em Kof quando a linguagem expor isso.
+O Kof já tem `kof lsp` (hover/completion/diagnostics do frontend real,
+presente desde o 0.1.2). Para outros editores, o LSP é a única via. Para o
+Kof Editor, o LSP é um caminho **desnecessário**: o frontend oficial vive no
+mesmo ecossistema, e o editor pode consumir a análise diretamente em Kof
+quando a linguagem expor isso como biblioteca.
 
 O LSP continua útil para *outros* editores (Vim, Emacs, etc.) — não para o
 nosso.

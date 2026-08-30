@@ -48,10 +48,13 @@ highlight, menu, temas, problemas, atalhos, pastas recentes, templates.
 
 ## Dependências do Kof (destravam itens acima)
 
-Estado verificado contra 0.0.14-alpha (24/08/2026):
+Estado verificado contra **0.2.3-beta** (29/08/2026):
 
 - ~~**F4 processos**~~ — ✅ `process.run` → terminal/git nativos destravados (6, 7)
-- ~~**J6 KofJS for-loop / J2 IO platform**~~ — ✅ resolvidos no 0.0.14 → item 9 depende só do repro J4/J5
+- ~~**J6 KofJS for-loop / J2 IO platform**~~ — ✅ resolvidos; o **núcleo roda no target `js`** (revalidado 29/08)
 - **Debugger Kof** — 🟡 MVP disponível (`kof debug`: breakpoints + call stack) → Run/Debug (8)
-- **F3 módulos multi-arquivo** — ❌ P1 do plano do Kof (indireto)
-- **LSP** — 🟡 diagnostics reais via `kof lsp`; hover/completion planejados (alternativa ao autocomplete nativo do Estágio 5)
+- **F3 módulos multi-arquivo** — ✅ JVM/JS no 0.2.3-beta (`import a.b.C`); ❌ Native
+- **LSP** — 🟡 diagnostics reais via `kof lsp`; hover/completion já chegaram (0.1.2)
+- **R1 (regressão)** — scanner completo cracha no Native no 0.2.3-beta → bloqueia o binário nativo (Estágio 6)
+- **R2/R3/R4 (regressões JVM/Native)** — `mapOf(k,v)`, `String?`, `Box<T>` quebram → não usar até o fix
+- **`enum`/`Set`/pattern/higher-order/`spawn`** — ✅ novos idiomas disponíveis no editor (lexer atualizado)

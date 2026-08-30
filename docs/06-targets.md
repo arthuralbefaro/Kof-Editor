@@ -23,25 +23,31 @@ Kof Editor (um código-fonte)
 - Caminho natural para o Estágio 4 (UI via interop com Java: Swing/JavaFX
   ou render próprio sobre `java.awt`/`javafx`).
 
-## Native ⏳ (String API resolvida; falta validar o editor completo)
+## Native ⏳ (regressão no 0.2.3-beta)
 
-- O backend nativo gera ELF x86-64 estático.
-- A API de String nativa (`length`, `charAt`, `substring`, concat...) foi
-  corrigida no Kof — o bloqueio original do lexer caiu; **repro do editor
-  completo no native pendente** (B11/B12 podem afetar: ver
-  [08 — Restrições](08-restricoes-kof.md)).
-- JSON de objetos também é JVM-only hoje (JSN002) — o editor usa JSON de
-  String/Int/List, que já funciona nativo (o núcleo foi escrito para não
-  depender de JSON de objetos).
+- O backend nativo gera ELF x86-64 (link dinâmico).
+- No **Kof 0.0.14** o núcleo do editor rodava idêntico no ELF. No
+  **0.2.3-beta** o scanner completo (`Lexer.tokenize`) **cracha com
+  `array index out of bounds` na seção [2]** (regressão do NativeBackend —
+  R1; ver [08 — Restrições](08-restricoes-kof.md)). Loops simples de
+  `substring` isolados ainda funcionam; o `tokenize()` inteiro não.
+- Ganhos no native desde 0.0.14: JSON de objetos (`JSN002` fechado),
+  `enum`, `Set`, pattern matching, higher-order, `spawn/await` (JVM/JS).
+- Mismatches semânticos que ainda atrapalham: `substring(end>len)` crasha
+  (R5) e token de erro + identificador pode hangar (R6).
 - Com o editor compilando no native: um binário, zero dependências.
 
-## Web ⏳ (aguarda backend Web do Kof — KofJS)
+## Web / KofJS ✅ (núcleo roda; front ainda via `kof serve`)
 
-- O mesmo editor com backend de renderização DOM.
-- O lexer/análise roda em worker (sem travar a UI).
-- Persistência local via IndexedDB (interop).
-- O terminal web é compilado para Web Worker + pipes — ainda terminal
-  nativo, apenas com transporte web.
+- O KofJS é **alpha funcional** no Kof 0.2.3-beta: a mesma IR gera ESM
+  (ES2022+) executado na GraalJS **embarcada** (sem Node.js), com source
+  maps. O **núcleo do editor roda no target `js`** (7 seções idênticas à
+  JVM — revalidado 29/08/2026).
+- `kof run editor.kf --target js` / `kof build --target js`.
+- O front do editor ainda é servido por `kof serve` (fase 1); a migração
+  para um front KofJS declarativo (`kof.ui`) é o próximo passo
+  (ver [09 — Contrato KofJS](09-kofjs.md)).
+- Persistência local (IndexedDB via interop) e web worker seguem pendentes.
 
 ## Regra de ouro
 
@@ -51,28 +57,29 @@ Kof Editor (um código-fonte)
 Exemplo aplicado: o registry foi escrito sem JSON de objetos (que é JVM-only
 hoje) justamente para não vazar para o nativo.
 
-## Matriz atual
+## Matriz atual (núcleo, 0.2.3-beta)
 
 | Capacidade | JVM | Native | Web |
 |------------|-----|--------|-----|
-| Lexer Kof | ✅ | ✅* | ⏳ |
-| Lexer JSON | ✅ | ✅* | ⏳ |
+| Lexer Kof (novo, 0.2.3-beta) | ✅ | ✅ | ⏳ |
+| Lexer JSON | ✅ | ✅ | ⏳ |
 | Registry | ✅ | ✅ | ⏳ |
-| Buffer | ✅ | ✅* | ⏳ |
-| JSON (String/Int/List) | ✅ | ✅ | ⏳ |
-| JSON (objetos) | ✅ | ❌ (JSN002; arrays ✅) | ⏳ |
-| ANSI no highlight | ✅ (`\u001b` nativo da linguagem) | ✅ (`\u001b` no native — B6) | ⏳ |
+| Buffer | ✅ | ✅ | ⏳ |
+| Núcleo completo (7 seções) | ✅ | ❌ crash [2] (R1) | ✅ |
+| JSON (String/Int/List) | ✅ | ✅ | ✅ |
+| JSON (objetos) | ✅ | ✅ (fechado 0.2.3-beta) | ✅ |
+| ANSI no highlight | ✅ | ✅ | ⏳ |
 | UI | ⏳ Estágio 4 (ou `kof.ui` + webview) | ⏳ Estágio 6 | ⏳ Estágio 7 |
 
-\* compila e executa (String API nativa corrigida); repro do editor completo pendente (ver 08).
+\* Native: o scanner completo (`tokenize`) cracha no 0.2.3-beta (R1);
+`substring(end>len)` crasha (R5); `#`+identificador pode hangar (R6) — ver 08.
 ## Escopo de desenvolvimento atual (23/08/2026)
 
 O foco atual de desenvolvimento é **JVM e Native para Linux**. O target
 **web** é uma capacidade real e funcional (o front do editor roda via
 `kof serve` + `kof-webview`), mas está **fora do escopo atual de
 desenvolvimento**: sem release web, sem navegador como alvo de entrega.
-O bloqueio J6 (for-loop no KofJS) foi **resolvido** no Kof (0.0.14:
-while/for/do-while ✅ nos 3 targets), o que volta a permitir manutenção do
-backend KofJS. A stack web permanece como o caminho de execução de
-desenvolvimento (a janela do editor roda em `kof-webview`, que é o
-mesmo front servido).
+No 0.2.3-beta o for-loop (J6) e o núcleo completo no KofJS funcionam; o
+bloqueio do native virou o regressão R1 (scanner cracha no ELF). A stack web
+permanece como o caminho de execução de desenvolvimento (a janela do editor
+roda em `kof-webview`, que é o mesmo front servido).
