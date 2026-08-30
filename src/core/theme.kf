@@ -94,3 +94,139 @@ themeAt(Int index): String {
 themeNames(): String {
     return json.encode(listOf("Escuro", "Claro"))
 }
+
+hex2(Int c): String {
+    var r = (c >> 16) & 0xFF
+    var g = (c >> 8) & 0xFF
+    var b = c & 0xFF
+    return "#" + hexByte(r) + hexByte(g) + hexByte(b)
+}
+
+hexByte(Int v): String {
+    var digits = "0123456789ABCDEF"
+    var hi = (v >> 4) & 0xF
+    var lo = v & 0xF
+    return digits.substring(hi, hi + 1) + digits.substring(lo, lo + 1)
+}
+
+themeToYaml(Theme t): String {
+    var out = "# tema do Kof Editor (chave: \"#RRGGBB\")\n"
+    out = out + "name: \"" + t.name + "\"\n"
+    out = out + "bg: \"" + hex2(t.bg) + "\"\n"
+    out = out + "fg: \"" + hex2(t.fg) + "\"\n"
+    out = out + "header: \"" + hex2(t.header) + "\"\n"
+    out = out + "selection: \"" + hex2(t.selection) + "\"\n"
+    out = out + "currentLine: \"" + hex2(t.currentLine) + "\"\n"
+    out = out + "gutter: \"" + hex2(t.gutter) + "\"\n"
+    out = out + "terminal: \"" + hex2(t.terminal) + "\"\n"
+    out = out + "terminalFg: \"" + hex2(t.terminalFg) + "\"\n"
+    out = out + "keyword: \"" + hex2(t.keyword) + "\"\n"
+    out = out + "type: \"" + hex2(t.type) + "\"\n"
+    out = out + "string: \"" + hex2(t.stringColor) + "\"\n"
+    out = out + "char: \"" + hex2(t.charColor) + "\"\n"
+    out = out + "number: \"" + hex2(t.number) + "\"\n"
+    out = out + "comment: \"" + hex2(t.comment) + "\"\n"
+    out = out + "operator: \"" + hex2(t.operator) + "\"\n"
+    out = out + "punctuation: \"" + hex2(t.punctuation) + "\"\n"
+    out = out + "identifier: \"" + hex2(t.identifier) + "\"\n"
+    out = out + "error: \"" + hex2(t.error) + "\"\n"
+    return out
+}
+
+yamlValue(String line): String {
+    var colon = line.indexOf(":")
+    if (colon < 0) {
+        return ""
+    }
+    var v = line.substring(colon + 1, line.length()).trim()
+    var len = v.length()
+    if (len >= 2 && v.substring(0, 1) == "\"" && v.substring(len - 1, len) == "\"") {
+        return v.substring(1, len - 1)
+    }
+    return v
+}
+
+colorFromHex(String s): Int {
+    var hex = s
+    if (s.substring(0, 1) == "#") {
+        hex = s.substring(1, s.length())
+    }
+    if (hex.length() < 6) {
+        return 0xFF282A36
+    }
+    var digits = "0123456789abcdefABCDEF"
+    var out = 0xFF000000
+    var i = 0
+    while (i < 6) {
+        var c = hex.substring(i, i + 1)
+        var d = 0
+        var k = 0
+        while (k < 16) {
+            var dk = digits.substring(k, k + 1)
+            if (dk == c || dk == c.toLowerCase()) {
+                d = k
+            }
+            k = k + 1
+        }
+        out = (out << 4) | d
+        i = i + 1
+    }
+    return out
+}
+
+themeFromYaml(String yaml): Theme {
+    var t = darkTheme()
+    var lines = yaml.split("\n")
+    for (var line in lines) {
+        var l = line.trim()
+        var colon = l.indexOf(":")
+        if (colon <= 0) {
+            continue
+        }
+        var key = l.substring(0, colon).trim()
+        var v = yamlValue(l)
+        if (v.length() == 0) {
+            continue
+        }
+        if (l.startsWith("name:")) {
+            t.name = v
+        } else if (l.startsWith("bg:")) {
+            t.bg = colorFromHex(v)
+        } else if (l.startsWith("fg:")) {
+            t.fg = colorFromHex(v)
+        } else if (l.startsWith("header:")) {
+            t.header = colorFromHex(v)
+        } else if (l.startsWith("selection:")) {
+            t.selection = colorFromHex(v)
+        } else if (l.startsWith("currentLine:")) {
+            t.currentLine = colorFromHex(v)
+        } else if (l.startsWith("gutter:")) {
+            t.gutter = colorFromHex(v)
+        } else if (l.startsWith("terminal:")) {
+            t.terminal = colorFromHex(v)
+        } else if (l.startsWith("terminalFg:")) {
+            t.terminalFg = colorFromHex(v)
+        } else if (l.startsWith("keyword:")) {
+            t.keyword = colorFromHex(v)
+        } else if (l.startsWith("type:")) {
+            t.type = colorFromHex(v)
+        } else if (l.startsWith("string:")) {
+            t.stringColor = colorFromHex(v)
+        } else if (l.startsWith("char:")) {
+            t.charColor = colorFromHex(v)
+        } else if (l.startsWith("number:")) {
+            t.number = colorFromHex(v)
+        } else if (l.startsWith("comment:")) {
+            t.comment = colorFromHex(v)
+        } else if (l.startsWith("operator:")) {
+            t.operator = colorFromHex(v)
+        } else if (l.startsWith("punctuation:")) {
+            t.punctuation = colorFromHex(v)
+        } else if (l.startsWith("identifier:")) {
+            t.identifier = colorFromHex(v)
+        } else if (l.startsWith("error:")) {
+            t.error = colorFromHex(v)
+        }
+    }
+    return t
+}

@@ -7,12 +7,14 @@ pageHtml(): String {
         "<html lang=\"pt\">\n" +
         "<head>\n" +
         "  <meta charset=\"utf-8\">\n" +
+        "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
         "  <title>Kof Editor</title>\n" +
         "  <link rel=\"icon\" href=\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect x=%224%22 y=%224%22 width=%2256%22 height=%2256%22 rx=%2214%22 fill=%22%238be9fd%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22monospace%22 font-size=%2236%22 font-weight=%22bold%22 text-anchor=%22middle%22 fill=%22%231e1e24%22%3EK%3C/text%3E%3C/svg%3E\">\n" +
         "  <link rel=\"stylesheet\" href=\"/editor.css\">\n" +
         "</head>\n" +
         "<body>\n" +
         "  <div id=\"menubar\">\n" +
+        "    <button id=\"side-toggle\" title=\"Explorer\">☰</button>\n" +
         "    <div class=\"menu\">Arquivo\n" +
         "      <div class=\"dropdown\">\n" +
         "        <div class=\"mi\" id=\"mi-open\">Abrir pasta...</div>\n" +
@@ -36,6 +38,8 @@ pageHtml(): String {
         "    <div class=\"menu\">Tema\n" +
         "      <div class=\"dropdown\">\n" +
         "        <div class=\"mi\" id=\"mi-theme\">Alternar tema</div>\n" +
+        "        <div class=\"mi\" id=\"mi-theme-export\">Exportar tema (YAML)...</div>\n" +
+        "        <div class=\"mi\" id=\"mi-theme-import\">Importar tema (YAML)...</div>\n" +
         "      </div>\n" +
         "    </div>\n" +
         "  </div>\n" +
@@ -199,15 +203,15 @@ pageCss(): String {
         "#problems .p { padding: 2px 10px; cursor: pointer; color: var(--k-error); }\n" +
         "#problems .p:hover { background: var(--sel); }\n" +
         "#panel { display: flex; flex-direction: column; background: var(--panel); border-top: 1px solid var(--border);\n" +
-        "  height: 30vh; min-height: 100px; max-height: 70vh; overscroll-behavior: contain; }\n" +
+        "  height: 30vh; min-height: 100px; max-height: 85vh; overscroll-behavior: contain; flex: none; }\n" +
         "#panel-grip { height: 5px; cursor: ns-resize; background: var(--border); flex: none; }\n" +
         "#panel-grip:hover { background: var(--accent); }\n" +
-        "#panel-tabs { display: flex; align-items: center; border-bottom: 1px solid var(--border); font-size: 11px; user-select: none; }\n" +
+        "#panel-tabs { display: flex; align-items: center; border-bottom: 1px solid var(--border); font-size: 11px; user-select: none; flex: none; }\n" +
         ".ptab { padding: 5px 12px; color: var(--muted); cursor: pointer; border-right: 1px solid var(--border); }\n" +
         ".ptab.active { color: var(--accent); background: var(--hover); }\n" +
         ".ptab-close { margin-left: auto; padding: 3px 12px; cursor: pointer; color: var(--muted); font-size: 16px; }\n" +
         ".ptab-close:hover { color: var(--k-error); }\n" +
-        "#panel .panel-body { max-height: 160px; overflow: auto; font-family: monospace; font-size: 12px; }\n" +
+        "#panel .panel-body { flex: 1 1 auto; min-height: 0; overflow: auto; font-family: monospace; font-size: 12px; }\n" +
         "#terminal { padding: 4px 0; }\n" +
         "#term-out { margin: 0; padding: 4px 10px; color: var(--fg); white-space: pre-wrap; }\n" +
         "#term-out .te { color: var(--k-error); }\n" +
@@ -246,7 +250,30 @@ pageCss(): String {
         ".k-number { color: var(--k-number); }\n" +
         ".k-comment { color: var(--k-comment); font-style: italic; }\n" +
         ".k-error { color: var(--k-error); text-decoration: underline; }\n" +
-        ".k-operator, .k-punctuation, .k-identifier { color: var(--fg); }\n"
+        ".k-operator, .k-punctuation, .k-identifier { color: var(--fg); }\n" +
+        "#side-toggle { display: none; background: transparent; border: none; color: var(--fg);\n" +
+        "  font-size: 18px; cursor: pointer; padding: 6px 10px; flex: none; }\n" +
+        "@media (max-width: 900px) {\n" +
+        "  #minimap { display: none; }\n" +
+        "  #sidebar { position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; width: 280px;\n" +
+        "    box-shadow: 8px 0 30px rgba(0,0,0,.5); transform: translateX(-100%);\n" +
+        "    transition: transform .18s ease; max-width: 85vw; }\n" +
+        "  #sidebar.open { transform: translateX(0); }\n" +
+        "  #side-grip { display: none; }\n" +
+        "  #side-toggle { display: block; }\n" +
+        "  #menubar { flex-wrap: wrap; }\n" +
+        "  #crumbs { display: none; }\n" +
+        "  #palette { width: 92vw; left: 4vw; transform: none; top: 60px; }\n" +
+        "  #panel { height: 40vh; }\n" +
+        "  .ptab { padding: 7px 9px; font-size: 10px; }\n" +
+        "}\n" +
+        "@media (max-width: 600px) {\n" +
+        "  #activity { width: 38px; }\n" +
+        "  #status { font-size: 11px; flex-wrap: wrap; }\n" +
+        "  #panel { height: 45vh; }\n" +
+        "  #term-input, #dirinput, #searchinput { font-size: 16px; }\n" +
+        "  #gutter { width: 38px; }\n" +
+        "}\n"
 }
 pageJs(): String {
     return "var docs = [];\n" +
@@ -401,9 +428,13 @@ pageJs(): String {
         "  for (var l = 0; l < starts.length; l++) {\n" +
         "    var c = per[l] || '#33333c';\n" +
         "    var w = 40 - (per[l] ? 14 : 0);\n" +
-        "    out += '<div class=\"mm-line\" style=\"top:' + (l * 4) + 'px;width:' + w + 'px;background:' + c + '\"></div>';\n" +
+        "    out += '<div class=\"mm-line\" data-ln=\"' + (l + 1) + '\" style=\"top:' + (l * 4) + 'px;width:' + w + 'px;background:' + c + '\"></div>';\n" +
         "  }\n" +
         "  mm.innerHTML = out;\n" +
+        "  mm.onclick = function(ev) {\n" +
+        "    var line = Math.max(1, Math.round(ev.offsetY / 4) + 1);\n" +
+        "    scrollToLine(line);\n" +
+        "  };\n" +
         "}\n" +
         "\n" +
         "function updateStatus() {\n" +
@@ -425,6 +456,7 @@ pageJs(): String {
         "}\n" +
         "\n" +
         "function moveActiveLine(line) {\n" +
+        "  window._activeLn = line;\n" +
         "  var al = document.getElementById('active-line');\n" +
         "  if (!al) {\n" +
         "    al = document.createElement('div');\n" +
@@ -444,6 +476,7 @@ pageJs(): String {
         "  gutter.scrollTop = ta.scrollTop;\n" +
         "  hl.scrollTop = ta.scrollTop;\n" +
         "  hl.scrollLeft = ta.scrollLeft;\n" +
+        "  if (window._activeLn) moveActiveLine(window._activeLn);\n" +
         "}\n" +
         "\n" +
         "ta.addEventListener('scroll', syncScroll);\n" +
@@ -458,6 +491,12 @@ pageJs(): String {
         "  }\n" +
         "  clearTimeout(timer);\n" +
         "  timer = setTimeout(paint, 150);\n" +
+        "  if (window._autoSave !== false && activeDoc >= 0 && docs[activeDoc].path && docs[activeDoc].path.indexOf('/') >= 0) {\n" +
+        "    clearTimeout(window._autoSaveT);\n" +
+        "    window._autoSaveT = setTimeout(function() {\n" +
+        "      if (activeDoc >= 0 && docs[activeDoc].dirty) saveDoc();\n" +
+        "    }, 2000);\n" +
+        "  }\n" +
         "});\n" +
         "ta.addEventListener('keydown', function(e) {\n" +
         "  if (e.key === 'Tab') {\n" +
@@ -569,7 +608,7 @@ pageJs(): String {
         "}\n" +
         "var abtns = document.querySelectorAll('.abtn');\n" +
         "for (var i = 0; i < abtns.length; i++) (function(b) {\n" +
-        "  b.onclick = function() { setView(b.getAttribute('data-view')); };\n" +
+        "  b.onclick = function() { setView(b.getAttribute('data-view')); document.getElementById('sidebar').classList.add('open'); };\n" +
         "})(abtns[i]);\n" +
         "function loadGit(dir) {\n" +
         "  fetch('/api/git', {method: 'POST', body: dir}).then(function(r) { return r.text(); }).then(function(branch) {\n" +
@@ -725,6 +764,37 @@ pageJs(): String {
         "  };\n" +
         "}\n" +
         "document.getElementById('mi-theme').onclick = toggleTheme;\n" +
+        "document.getElementById('mi-theme-export').onclick = function() {\n" +
+        "  fetch('/api/theme-export', {method: 'POST', body: themeIdx}).then(function(r) { return r.text(); }).then(function(y) {\n" +
+        "    var name = themeIdx === '1' ? 'tema-claro.yaml' : 'tema-escuro.yaml';\n" +
+        "    var p = (currentDir ? currentDir + '/' : '') + name;\n" +
+        "    fetch('/api/write', {method: 'POST', body: p + '\\n' + y}).then(function(w) { return w.text(); }).then(function(ok) {\n" +
+        "      statusEl.textContent = ok === 'ok' ? 'tema exportado: ' + p : 'falha ao exportar tema';\n" +
+        "    });\n" +
+        "  });\n" +
+        "};\n" +
+        "document.getElementById('mi-theme-import').onclick = function() {\n" +
+        "  var p = prompt('Caminho do tema (.yaml):', (currentDir ? currentDir + '/' : '') + 'tema-escuro.yaml');\n" +
+        "  if (!p) return;\n" +
+        "  fetch('/api/read', {method: 'POST', body: p}).then(function(r) { return r.text(); }).then(function(y) {\n" +
+        "    if (y.indexOf('not found') >= 0) { statusEl.textContent = 'arquivo não encontrado: ' + p; return; }\n" +
+        "    fetch('/api/theme-import', {method: 'POST', body: y}).then(function(r) { return r.json(); }).then(function(t) {\n" +
+        "      applyThemeJson(t);\n" +
+        "      statusEl.textContent = 'tema importado: ' + p;\n" +
+        "    });\n" +
+        "  });\n" +
+        "};\n" +
+        "document.getElementById('side-toggle').onclick = function(e) {\n" +
+        "  e.stopPropagation();\n" +
+        "  var sb = document.getElementById('sidebar');\n" +
+        "  sb.classList.toggle('open');\n" +
+        "};\n" +
+        "document.addEventListener('click', function(e) {\n" +
+        "  var sb = document.getElementById('sidebar');\n" +
+        "  if (sb.classList.contains('open') && !sb.contains(e.target) && e.target.id !== 'side-toggle') {\n" +
+        "    sb.classList.remove('open');\n" +
+        "  }\n" +
+        "});\n" +
         "\n" +
         "// abrir arquivo via ?open=/caminho/arquivo.kf (launcher/mimetype)\n" +
         "var openParam = '';\n" +
@@ -736,13 +806,11 @@ pageJs(): String {
         "renderWelcome();\n" +
         "\n" +
         "// ---- atalhos ----\n" +
-        "var problems = document.createElement('div');\n" +
-        "problems.id = 'problems';\n" +
-        "document.body.insertBefore(problems, document.getElementById('status'));\n" +
+        "// problems: usa o #problems do painel (o clone no body antigo ficava
+// fora do painel e invisível — painel PROBLEMS vazio)\n" +
+        "var problems = document.getElementById('problems');\n" +
         "\n" +
-        "async function applyTheme() {\n" +
-        "  var r = await fetch('/api/theme', {method: 'POST', body: themeIdx});\n" +
-        "  var t = await r.json();\n" +
+        "function applyThemeJson(t) {\n" +
         "  function rgb(v) {\n" +
         "    var p = v.split(';');\n" +
         "    return 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')';\n" +
@@ -757,6 +825,11 @@ pageJs(): String {
         "    '--muted': rgb(t.comment), '--accent': rgb(t.type)\n" +
         "  };\n" +
         "  for (var k in vars) document.documentElement.style.setProperty(k, vars[k]);\n" +
+        "}\n" +
+        "async function applyTheme() {\n" +
+        "  var r = await fetch('/api/theme', {method: 'POST', body: themeIdx});\n" +
+        "  var t = await r.json();\n" +
+        "  applyThemeJson(t);\n" +
         "}\n" +
         "var themeIdx = '0';\n" +
         "applyTheme();\n" +
@@ -894,7 +967,18 @@ pageJs(): String {
         "  { label: 'Inserir snippet: record', run: function() { insertSnippet('record Nome(String campo)'); } },\n" +
         "  { label: 'Inserir snippet: enum', run: function() { insertSnippet('enum Nome { A, B }'); } },\n" +
         "  { label: 'Inserir snippet: test', run: function() { insertSnippet('test \"nome\" {\\n\\tassert(true)\\n}'); } },\n" +
-        "  { label: 'Inserir snippet: spawn', run: function() { insertSnippet('spawn tarefa()'); } }\n" +
+        "  { label: 'Inserir snippet: spawn', run: function() { insertSnippet('spawn tarefa()'); } },\n" +
+        "  { label: 'Ir para linha (Ctrl+G)', run: showGoToLine },\n" +
+        "  { label: 'Buscar no arquivo (Ctrl+F)', run: showFind },\n" +
+        "  { label: 'Alternar auto-save', run: function() {\n" +
+        "      window._autoSave = window._autoSave === false;\n" +
+        "      statusEl.textContent = 'auto-save: ' + (window._autoSave === false ? 'off' : 'on');\n" +
+        "  } },\n" +
+        "  { label: 'Alternar wrap (Alt+Z)', run: function() {\n" +
+        "      var w = ta.style.whiteSpace === 'pre' ? 'pre-wrap' : 'pre';\n" +
+        "      ta.style.whiteSpace = w; hl.style.whiteSpace = w;\n" +
+        "      statusEl.textContent = 'wrap: ' + (w === 'pre' ? 'off' : 'on');\n" +
+        "  } }\n" +
         "];\n" +
         "\n" +
         "function insertSnippet(s) {\n" +
@@ -980,6 +1064,145 @@ pageJs(): String {
         "  render('');\n" +
         "}\n" +
         "\n" +
+        "function overlayPrompt(label, cb) {\n" +
+        "  var ov = document.getElementById('palette');\n" +
+        "  if (!ov) {\n" +
+        "    ov = document.createElement('div');\n" +
+        "    ov.id = 'palette';\n" +
+        "    ov.innerHTML = '<input id=\"palette-input\"><div id=\"palette-list\"></div>';\n" +
+        "    document.body.appendChild(ov);\n" +
+        "  }\n" +
+        "  ov.style.display = 'block';\n" +
+        "  var inp = document.getElementById('palette-input');\n" +
+        "  var list = document.getElementById('palette-list');\n" +
+        "  list.innerHTML = '';\n" +
+        "  inp.placeholder = label;\n" +
+        "  inp.value = '';\n" +
+        "  inp.focus();\n" +
+        "  inp.onkeydown = function(e) {\n" +
+        "    if (e.key === 'Escape') ov.style.display = 'none';\n" +
+        "    if (e.key === 'Enter') { var v = inp.value; ov.style.display = 'none'; cb(v); }\n" +
+        "  };\n" +
+        "}\n" +
+        "function scrollToLine(line) {\n" +
+        "  var lines = ta.value.split('\\n');\n" +
+        "  var pos = 0;\n" +
+        "  for (var l = 0; l < line - 1 && l < lines.length; l++) pos += lines[l].length + 1;\n" +
+        "  ta.focus();\n" +
+        "  ta.setSelectionRange(pos, pos);\n" +
+        "  var lh = 22.4;\n" +
+        "  ta.scrollTop = Math.max(0, (line - 5) * lh);\n" +
+        "  syncScroll();\n" +
+        "  updateStatus();\n" +
+        "}\n" +
+        "function showGoToLine() {\n" +
+        "  if (activeDoc < 0) return;\n" +
+        "  var total = ta.value.split('\\n').length;\n" +
+        "  overlayPrompt('ir para linha (1-' + total + '):', function(v) {\n" +
+        "    var n = parseInt(v, 10);\n" +
+        "    if (n >= 1 && n <= total) scrollToLine(n);\n" +
+        "  });\n" +
+        "}\n" +
+        "var findState = { term: '', idx: -1, matches: [] };\n" +
+        "function findMatches(term) {\n" +
+        "  var out = [];\n" +
+        "  if (!term) return out;\n" +
+        "  var text = ta.value.toLowerCase();\n" +
+        "  var t = term.toLowerCase();\n" +
+        "  var from = 0;\n" +
+        "  while (from <= text.length - t.length) {\n" +
+        "    var i = text.indexOf(t, from);\n" +
+        "    if (i < 0) break;\n" +
+        "    out.push(i);\n" +
+        "    from = i + t.length;\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}\n" +
+        "function showFind() {\n" +
+        "  if (activeDoc < 0) return;\n" +
+        "  overlayPrompt('buscar no arquivo (Enter, F3 próxima):', function(v) {\n" +
+        "    findState.term = v;\n" +
+        "    findState.matches = findMatches(v);\n" +
+        "    findState.idx = -1;\n" +
+        "    findNext();\n" +
+        "  });\n" +
+        "  var sel = ta.value.slice(ta.selectionStart, ta.selectionEnd);\n" +
+        "  if (sel && sel.indexOf('\\n') < 0) document.getElementById('palette-input').value = sel;\n" +
+        "}\n" +
+        "function findNext() {\n" +
+        "  if (!findState.term || findState.matches.length === 0) return;\n" +
+        "  findState.idx = (findState.idx + 1) % findState.matches.length;\n" +
+        "  var pos = findState.matches[findState.idx];\n" +
+        "  ta.focus();\n" +
+        "  ta.setSelectionRange(pos, pos + findState.term.length);\n" +
+        "  var before = ta.value.slice(0, pos).split('\\n').length;\n" +
+        "  scrollToLine(before);\n" +
+        "  statusEl.textContent = findState.term + ' — ' + (findState.idx + 1) + '/' + findState.matches.length + ' (F3 próxima)';\n" +
+        "}\n" +
+        "function wordAtCaret() {\n" +
+        "  var before = ta.value.slice(0, ta.selectionStart);\n" +
+        "  var m = before.match(/[A-Za-z_][A-Za-z0-9_]*$/);\n" +
+        "  return m ? m[0] : '';\n" +
+        "}\n" +
+        "function selectNextOccurrence() {\n" +
+        "  var w = wordAtCaret();\n" +
+        "  if (!w) return;\n" +
+        "  var from = ta.selectionEnd;\n" +
+        "  var i = ta.value.indexOf(w, from);\n" +
+        "  if (i < 0) i = ta.value.indexOf(w);\n" +
+        "  if (i < 0) return;\n" +
+        "  ta.setSelectionRange(i, i + w.length);\n" +
+        "  var lines = ta.value.slice(0, i).split('\\n').length;\n" +
+        "  scrollToLine(lines);\n" +
+        "}\n" +
+        "function deleteLine() {\n" +
+        "  var caret = ta.selectionStart;\n" +
+        "  var ls = ta.value.lastIndexOf('\\n', caret - 1) + 1;\n" +
+        "  var le = ta.value.indexOf('\\n', caret);\n" +
+        "  if (le < 0) le = ta.value.length;\n" +
+        "  ta.value = ta.value.slice(0, ls) + ta.value.slice(le + 1);\n" +
+        "  if (activeDoc >= 0) { docs[activeDoc].text = ta.value; docs[activeDoc].dirty = true; renderTabs(); paint(); }\n" +
+        "}\n" +
+        "function renameSymbol() {\n" +
+        "  var w = wordAtCaret();\n" +
+        "  if (!w || activeDoc < 0) return;\n" +
+        "  overlayPrompt('renomear \\'' + w + '\\' para:', function(nn) {\n" +
+        "    if (!nn || nn === w) return;\n" +
+        "    var v = ta.value;\n" +
+        "    var out = '';\n" +
+        "    var last = 0;\n" +
+        "    var k = 0;\n" +
+        "    while (k <= v.length - w.length) {\n" +
+        "      var isWord = v.slice(k, k + w.length) === w &&\n" +
+        "        (k === 0 || !/[A-Za-z0-9_]/.test(v[k - 1])) &&\n" +
+        "        (k + w.length >= v.length || !/[A-Za-z0-9_]/.test(v[k + w.length]));\n" +
+        "      if (isWord) {\n" +
+        "        out += v.slice(last, k) + nn;\n" +
+        "        k = k + w.length;\n" +
+        "        last = k;\n" +
+        "      } else {\n" +
+        "        k = k + 1;\n" +
+        "      }\n" +
+        "    }\n" +
+        "    out += v.slice(last);\n" +
+        "    ta.value = out;\n" +
+        "    docs[activeDoc].text = out;\n" +
+        "    docs[activeDoc].dirty = true;\n" +
+        "    renderTabs();\n" +
+        "    paint();\n" +
+        "    statusEl.textContent = 'renomeado: ' + w + ' -> ' + nn;\n" +
+        "  });\n" +
+        "}\n" +
+        "async function gotoDefinition() {\n" +
+        "  var w = wordAtCaret();\n" +
+        "  if (!w) return;\n" +
+        "  var r = await fetch('/api/outline', {method: 'POST', body: ta.value});\n" +
+        "  var syms = await r.json();\n" +
+        "  for (var i = 0; i < syms.length; i++) {\n" +
+        "    if (syms[i].name === w) { scrollToLine(syms[i].line); return; }\n" +
+        "  }\n" +
+        "  selectNextOccurrence();\n" +
+        "}\n" +
         "document.addEventListener('keydown', function(e) {\n" +
         "  var ctrl = e.ctrlKey || e.metaKey;\n" +
         "  if (ctrl && e.key === 'p' && e.shiftKey) {\n" +
@@ -1014,6 +1237,33 @@ pageJs(): String {
         "  } else if (ctrl && e.key === '-') {\n" +
         "    e.preventDefault();\n" +
         "    zoom(-1);\n" +
+        "  } else if (e.altKey && e.key === 'z') {\n" +
+        "    e.preventDefault();\n" +
+        "    var w = ta.style.whiteSpace === 'pre' ? 'pre-wrap' : 'pre';\n" +
+        "    ta.style.whiteSpace = w;\n" +
+        "    hl.style.whiteSpace = w;\n" +
+        "    statusEl.textContent = 'wrap: ' + (w === 'pre' ? 'off' : 'on');\n" +
+        "  } else if (ctrl && e.key === 'g') {\n" +
+        "    e.preventDefault();\n" +
+        "    showGoToLine();\n" +
+        "  } else if (ctrl && e.key === 'f') {\n" +
+        "    e.preventDefault();\n" +
+        "    showFind();\n" +
+        "  } else if (e.key === 'F3') {\n" +
+        "    e.preventDefault();\n" +
+        "    findNext();\n" +
+        "  } else if (ctrl && e.key === 'd') {\n" +
+        "    e.preventDefault();\n" +
+        "    selectNextOccurrence();\n" +
+        "  } else if (ctrl && e.shiftKey && e.key === 'K') {\n" +
+        "    e.preventDefault();\n" +
+        "    deleteLine();\n" +
+        "  } else if (e.key === 'F2') {\n" +
+        "    e.preventDefault();\n" +
+        "    renameSymbol();\n" +
+        "  } else if (e.key === 'F12') {\n" +
+        "    e.preventDefault();\n" +
+        "    gotoDefinition();\n" +
         "  }\n" +
         "});\n" +
         "\n" +
@@ -1132,26 +1382,80 @@ pageJs(): String {
         "\n" +
         "// ---- terminal integrado (Ctrl+`) ----\n" +
         "var termOut = document.getElementById('term-out');\n" +
+        "var termHist = [];\n" +
+        "var termHistIdx = -1;\n" +
+        "var termCwd = '';\n" +
+        "function docDirCwd() {\n" +
+        "  if (activeDoc >= 0) { var dp = docs[activeDoc].path; var li = dp.lastIndexOf('/'); if (li > 0) return dp.slice(0, li); }\n" +
+        "  return currentDir || '';\n" +
+        "}\n" +
+        "function ansiToHtml(s) {\n" +
+        "  var codes = { '30':'#282a36','31':'#ff5555','32':'#50fa7b','33':'#f1fa8c','34':'#8be9fd','35':'#ff79c6','36':'#8be9fd','37':'#f8f8f2',\n" +
+        "    '90':'#6272a4','91':'#ff6e6e','92':'#69ff94','93':'#ffffa5','94':'#bd93f9','95':'#ff79c6','96':'#8be9fd','97':'#ffffff' };\n" +
+        "  var parts = String(s).split(/\\x1b\\[/);\n" +
+        "  var out = '';\n" +
+        "  for (var i = 0; i < parts.length; i++) {\n" +
+        "    if (i === 0) { out += esc(parts[0]); continue; }\n" +
+        "    var m = parts[i].match(/^([0-9;]+)m([\\s\\S]*)$/);\n" +
+        "    if (!m) { out += esc(parts[i]); continue; }\n" +
+        "    var cs = m[1].split(';');\n" +
+        "    var style = '';\n" +
+        "    for (var k = 0; k < cs.length; k++) {\n" +
+        "      if (codes[cs[k]]) style += 'color:' + codes[cs[k]] + ';';\n" +
+        "      if (cs[k] === '1') style += 'font-weight:bold;';\n" +
+        "    }\n" +
+        "    out += style ? '<span style=\"' + style + '\">' + esc(m[2]) + '</span>' : esc(m[2]);\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}\n" +
+        "function shortCwd() {\n" +
+        "  if (!termCwd) return '~';\n" +
+        "  return termCwd.split('/').pop() || '/';\n" +
+        "}\n" +
         "function termPrint(text, cls) {\n" +
         "  var s = document.createElement('span');\n" +
         "  if (cls) s.className = cls;\n" +
-        "  s.textContent = text;\n" +
+        "  s.innerHTML = ansiToHtml(text);\n" +
         "  termOut.appendChild(s);\n" +
         "  termOut.scrollTop = termOut.scrollHeight;\n" +
         "}\n" +
+        "function termPrompt() { return shortCwd() + ' $ '; }\n" +
         "async function runTerm(cmd) {\n" +
-        "  termPrint('$ ' + cmd + '\\n');\n" +
+        "  if (!termCwd) termCwd = docDirCwd();\n" +
+        "  var cmdStr = termCwd ? 'cd ' + JSON.stringify(termCwd) + ' && ' + cmd : cmd;\n" +
+        "  termPrint(shortCwd() + ' $ ' + cmd + '\\n', 'tp');\n" +
         "  var r = await fetch('/api/exec', {method: 'POST', body: cmd});\n" +
         "  var j = await r.json();\n" +
         "  if (j.stdout) termPrint(j.stdout);\n" +
         "  if (j.stderr) termPrint(j.stderr, 'te');\n" +
-        "  termPrint('\\n[exit ' + j.exitCode + ']\\n');\n" +
+        "  if (j.exitCode !== 0) termPrint('[exit ' + j.exitCode + ']\\n', 'te');\n" +
+        "  if (cmd.indexOf('cd ') === 0 && j.exitCode === 0) {\n" +
+        "    var dest = cmd.replace(/^cd\\s+/, '').trim().replace(/^\"|\"$/g, '');\n" +
+        "    var r2 = await fetch('/api/exec', {method: 'POST', body: 'cd ' + JSON.stringify(dest) + ' 2>/dev/null && pwd'});\n" +
+        "    var j2 = await r2.json();\n" +
+        "    if (j2.exitCode === 0) termCwd = j2.stdout.trim();\n" +
+        "  }\n" +
         "}\n" +
         "document.getElementById('term-input').addEventListener('keydown', function(e) {\n" +
         "  if (e.key === 'Enter') {\n" +
         "    var cmd = this.value;\n" +
         "    this.value = '';\n" +
-        "    if (cmd.trim()) runTerm(cmd);\n" +
+        "    if (cmd.trim()) { termHist.push(cmd); termHistIdx = termHist.length; runTerm(cmd); }\n" +
+        "  } else if (e.key === 'ArrowUp') {\n" +
+        "    e.preventDefault();\n" +
+        "    if (termHist.length === 0) return;\n" +
+        "    if (termHistIdx < 0) termHistIdx = termHist.length;\n" +
+        "    termHistIdx = Math.max(0, termHistIdx - 1);\n" +
+        "    this.value = termHist[termHistIdx] || '';\n" +
+        "  } else if (e.key === 'ArrowDown') {\n" +
+        "    e.preventDefault();\n" +
+        "    if (termHistIdx < 0) return;\n" +
+        "    termHistIdx = Math.min(termHist.length, termHistIdx + 1);\n" +
+        "    this.value = termHist[termHistIdx] || '';\n" +
+        "    if (termHistIdx >= termHist.length) { this.value = ''; termHistIdx = -1; }\n" +
+        "  } else if (e.ctrlKey && e.key === 'l') {\n" +
+        "    e.preventDefault();\n" +
+        "    termOut.textContent = '';\n" +
         "  }\n" +
         "});\n" +
         "\n" +
@@ -1167,7 +1471,9 @@ pageJs(): String {
         "}\n" +
         "async function refreshGit() {\n" +
         "  var box = document.getElementById('gitpanel-body');\n" +
-        "  var dir = currentDir || '.';\n" +
+        "  var docDir = '';\n" +
+        "  if (activeDoc >= 0) { var dp = docs[activeDoc].path; var li = dp.lastIndexOf('/'); if (li > 0) docDir = dp.slice(0, li); }\n" +
+        "  var dir = currentDir || docDir || '.';\n" +
         "  box.innerHTML = '';\n" +
         "  var st = await gitCmd('cd ' + dir + ' 2>/dev/null; git status --porcelain 2>&1');\n" +
         "  if (st.exitCode != 0) {\n" +
@@ -1393,6 +1699,22 @@ apiTheme(String body): String {
     return themeAt(idx)
 }
 
+apiThemeExport(String body): String {
+    var idx = 0
+    if (body == "1") {
+        idx = 1
+    }
+    if (idx == 1) {
+        return themeToYaml(lightTheme())
+    }
+    return themeToYaml(darkTheme())
+}
+
+apiThemeImport(String body): String {
+    var t = themeFromYaml(body)
+    return themeToJson(t)
+}
+
 userShell(): String {
     var shell = config.env("SHELL")
     if (shell == null || shell.length() == 0) {
@@ -1542,10 +1864,22 @@ handle(String method, String path, String body): String {
         return apiWrite(body)
     }
     if (method == "POST" && path == "/api/check") {
-        return kofCheck(body)
+        return kofCheck(saveTempDoc(body))
+    }
+    if (method == "POST" && path == "/api/occurrences") {
+        var onl = body.indexOf("\n")
+        if (onl < 0) {
+            return "[]"
+        }
+        return occurrencesJson(body.substring(0, onl), body.substring(onl + 1, body.length()))
+    }
+    if (method == "POST" && path == "/api/theme-export") {
+        return apiThemeExport(body)
+    }
+    if (method == "POST" && path == "/api/theme-import") {
+        return apiThemeImport(body)
     }
     if (method == "POST" && path == "/api/run") {
-        var nl = body.indexOf("\n")
         return kofRun(saveTempDoc(body), "jvm")
     }
     return null
