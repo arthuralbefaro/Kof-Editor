@@ -38,6 +38,83 @@ class Theme {
     Int punctuation = 0xFFF8F8F2
     Int identifier = 0xFFF8F8F2
     Int error = 0xFFFF5555
+    // ── interface (chrome da IDE) ──
+    Int activityBg = 0xFF191A21
+    Int activityFg = 0xFF6272A4
+    Int activityActive = 0xFFFF79C6
+    Int activityBadge = 0xFFFF5555
+    Int sidebarBg = 0xFF21222C
+    Int sidebarFg = 0xFFF8F8F2
+    Int sidebarHover = 0xFF282A36
+    Int sidebarSelected = 0xFF44475A
+    Int fileModified = 0xFFFFB86C
+    Int fileAdded = 0xFF50FA7B
+    Int fileDeleted = 0xFFFF5555
+    Int fileUntracked = 0xFF8BE9FD
+    Int fileConflict = 0xFFFF79C6
+    Int fileIgnored = 0xFF6272A4
+    Int inputBg = 0xFF282A36
+    Int inputFg = 0xFFF8F8F2
+    Int inputBorder = 0xFF44475A
+    Int inputBorderFocus = 0xFFBD93F9
+    Int inputPlaceholder = 0xFF6272A4
+    Int tabBg = 0xFF191A21
+    Int tabFg = 0xFF6272A4
+    Int tabActiveBg = 0xFF282A36
+    Int tabActiveFg = 0xFFF8F8F2
+    Int tabBorder = 0xFFBD93F9
+    Int tabDotModified = 0xFFFFB86C
+    Int menuBg = 0xFF21222C
+    Int menuFg = 0xFFF8F8F2
+    Int menuHover = 0xFF44475A
+    Int headerBg = 0xFF21222C
+    Int headerFg = 0xFFF8F8F2
+    Int headerBorder = 0xFF191A21
+    // ── editor ──
+    Int cursor = 0xFFF8F8F2
+    Int currentLineBorder = 0xFF6272A4
+    Int indentGuide = 0xFF3E3D46
+    Int bracketMatch = 0xFFBD93F955
+    Int findHighlight = 0xFFFFB86C44
+    Int gutterActive = 0xFFF8F8F2
+    Int foldingIcon = 0xFF6272A4
+    Int diffAddBg = 0xFF50FA7B1A
+    Int diffAddSide = 0xFF50FA7B
+    Int diffDelBg = 0xFFFF55551A
+    Int diffDelSide = 0xFFFF5555
+    Int diffMarkerFg = 0xFF282A36
+    Int minimapBg = 0xFF1E1F29
+    Int minimapFg = 0xFF44475A
+    Int minimapCurrentLine = 0xFFF8F8F266
+    Int minimapDiffAdd = 0xFF50FA7B
+    Int minimapDiffDel = 0xFFFF5555
+    Int statusBg = 0xFF191A21
+    Int statusFg = 0xFF6272A4
+    Int statusAccent = 0xFFBD93F9
+    Int scrollbarThumb = 0xFF44475A88
+    Int scrollbarHover = 0xFF6272A4
+    // ansi 0..7 do terminal
+    Int ansiRed = 0xFFFF5555
+    Int ansiGreen = 0xFF50FA7B
+    Int ansiYellow = 0xFFF1FA8C
+    Int ansiBlue = 0xFFBD93F9
+    Int ansiMagenta = 0xFFFF79C6
+    Int ansiCyan = 0xFF8BE9FD
+    // ── tokens granulares ──
+    Int keywordControl = 0xFFFF79C6
+    Int keywordModifier = 0xFFFF79C6
+    Int stringEscape = 0xFFFF79C6
+    Int boolean = 0xFFBD93F9
+    Int nullLiteral = 0xFFBD93F9
+    Int todo = 0xFFFFB86C
+    Int functionCall = 0xFF50FA7B
+    Int functionDecl = 0xFF50FA7B
+    Int parameter = 0xFFFFB86C
+    Int constant = 0xFFBD93F9
+    Int enumMember = 0xFFBD93F9
+    Int annotation = 0xFFFFB86C
+    Int errorUnderline = 0xFFFF555588
+    Int warningUnderline = 0xFFFFB86C88
 }
 
 darkTheme(): Theme {
@@ -73,26 +150,225 @@ lightTheme(): Theme {
 
 
 themeToJson(Theme t): String {
-    return "{\"name\":\"" + t.name + "\",\"bg\":\"" + colorStr(t.bg) + "\",\"fg\":\"" + colorStr(t.fg) +
-        "\",\"header\":\"" + colorStr(t.header) + "\",\"selection\":\"" + colorStr(t.selection) +
-        "\",\"currentLine\":\"" + colorStr(t.currentLine) + "\",\"gutter\":\"" + colorStr(t.gutter) +
-        "\",\"terminal\":\"" + colorStr(t.terminal) + "\",\"terminalFg\":\"" + colorStr(t.terminalFg) +
-        "\",\"keyword\":\"" + colorStr(t.keyword) + "\",\"type\":\"" + colorStr(t.type) +
-        "\",\"string\":\"" + colorStr(t.stringColor) + "\",\"char\":\"" + colorStr(t.charColor) +
-        "\",\"number\":\"" + colorStr(t.number) + "\",\"comment\":\"" + colorStr(t.comment) +
-        "\",\"operator\":\"" + colorStr(t.operator) + "\",\"punctuation\":\"" + colorStr(t.punctuation) +
-        "\",\"identifier\":\"" + colorStr(t.identifier) + "\",\"error\":\"" + colorStr(t.error) + "\"}"
+    // JSON com chaves granulares (if./ed./tk.) + 18 clássicas p/ compat
+    var out = "{\"name\":\"" + t.name + "\""
+    out = out + ",\"if.headerBg\":\"" + colorStr(t.header) + "\""
+    out = out + ",\"if.headerFg\":\"" + colorStr(t.headerFg) + "\""
+    out = out + ",\"if.headerBorder\":\"" + colorStr(t.headerBorder) + "\""
+    out = out + ",\"if.activityBg\":\"" + colorStr(t.activityBg) + "\""
+    out = out + ",\"if.activityFg\":\"" + colorStr(t.activityFg) + "\""
+    out = out + ",\"if.activityActive\":\"" + colorStr(t.activityActive) + "\""
+    out = out + ",\"if.activityBadge\":\"" + colorStr(t.activityBadge) + "\""
+    out = out + ",\"if.sidebarBg\":\"" + colorStr(t.sidebarBg) + "\""
+    out = out + ",\"if.sidebarFg\":\"" + colorStr(t.sidebarFg) + "\""
+    out = out + ",\"if.sidebarHover\":\"" + colorStr(t.sidebarHover) + "\""
+    out = out + ",\"if.sidebarSelected\":\"" + colorStr(t.sidebarSelected) + "\""
+    out = out + ",\"if.fileModified\":\"" + colorStr(t.fileModified) + "\""
+    out = out + ",\"if.fileAdded\":\"" + colorStr(t.fileAdded) + "\""
+    out = out + ",\"if.fileDeleted\":\"" + colorStr(t.fileDeleted) + "\""
+    out = out + ",\"if.fileUntracked\":\"" + colorStr(t.fileUntracked) + "\""
+    out = out + ",\"if.fileConflict\":\"" + colorStr(t.fileConflict) + "\""
+    out = out + ",\"if.fileIgnored\":\"" + colorStr(t.fileIgnored) + "\""
+    out = out + ",\"if.inputBg\":\"" + colorStr(t.inputBg) + "\""
+    out = out + ",\"if.inputFg\":\"" + colorStr(t.inputFg) + "\""
+    out = out + ",\"if.inputBorder\":\"" + colorStr(t.inputBorder) + "\""
+    out = out + ",\"if.inputBorderFocus\":\"" + colorStr(t.inputBorderFocus) + "\""
+    out = out + ",\"if.inputPlaceholder\":\"" + colorStr(t.inputPlaceholder) + "\""
+    out = out + ",\"if.tabBg\":\"" + colorStr(t.tabBg) + "\""
+    out = out + ",\"if.tabFg\":\"" + colorStr(t.tabFg) + "\""
+    out = out + ",\"if.tabActiveBg\":\"" + colorStr(t.tabActiveBg) + "\""
+    out = out + ",\"if.tabActiveFg\":\"" + colorStr(t.tabActiveFg) + "\""
+    out = out + ",\"if.tabBorder\":\"" + colorStr(t.tabBorder) + "\""
+    out = out + ",\"if.tabDotModified\":\"" + colorStr(t.tabDotModified) + "\""
+    out = out + ",\"if.menuBg\":\"" + colorStr(t.menuBg) + "\""
+    out = out + ",\"if.menuFg\":\"" + colorStr(t.menuFg) + "\""
+    out = out + ",\"if.menuHover\":\"" + colorStr(t.menuHover) + "\""
+    out = out + ",\"ed.bg\":\"" + colorStr(t.bg) + "\""
+    out = out + ",\"ed.fg\":\"" + colorStr(t.fg) + "\""
+    out = out + ",\"ed.cursor\":\"" + colorStr(t.cursor) + "\""
+    out = out + ",\"ed.selectionBg\":\"" + colorStr(t.selection) + "\""
+    out = out + ",\"ed.currentLineBg\":\"" + colorStr(t.currentLine) + "\""
+    out = out + ",\"ed.currentLineBorder\":\"" + colorStr(t.currentLineBorder) + "\""
+    out = out + ",\"ed.indentGuide\":\"" + colorStr(t.indentGuide) + "\""
+    out = out + ",\"ed.bracketMatch\":\"" + colorStr(t.bracketMatch) + "\""
+    out = out + ",\"ed.findHighlight\":\"" + colorStr(t.findHighlight) + "\""
+    out = out + ",\"ed.gutterFg\":\"" + colorStr(t.gutter) + "\""
+    out = out + ",\"ed.gutterActive\":\"" + colorStr(t.gutterActive) + "\""
+    out = out + ",\"ed.foldingIcon\":\"" + colorStr(t.foldingIcon) + "\""
+    out = out + ",\"ed.diffAddBg\":\"" + colorStr(t.diffAddBg) + "\""
+    out = out + ",\"ed.diffAddSide\":\"" + colorStr(t.diffAddSide) + "\""
+    out = out + ",\"ed.diffDelBg\":\"" + colorStr(t.diffDelBg) + "\""
+    out = out + ",\"ed.diffDelSide\":\"" + colorStr(t.diffDelSide) + "\""
+    out = out + ",\"ed.diffMarkerFg\":\"" + colorStr(t.diffMarkerFg) + "\""
+    out = out + ",\"ed.minimapBg\":\"" + colorStr(t.minimapBg) + "\""
+    out = out + ",\"ed.minimapFg\":\"" + colorStr(t.minimapFg) + "\""
+    out = out + ",\"ed.minimapCurrentLine\":\"" + colorStr(t.minimapCurrentLine) + "\""
+    out = out + ",\"ed.minimapDiffAdd\":\"" + colorStr(t.minimapDiffAdd) + "\""
+    out = out + ",\"ed.minimapDiffDel\":\"" + colorStr(t.minimapDiffDel) + "\""
+    out = out + ",\"ed.statusBg\":\"" + colorStr(t.statusBg) + "\""
+    out = out + ",\"ed.statusFg\":\"" + colorStr(t.statusFg) + "\""
+    out = out + ",\"ed.statusAccent\":\"" + colorStr(t.statusAccent) + "\""
+    out = out + ",\"ed.terminalBg\":\"" + colorStr(t.terminal) + "\""
+    out = out + ",\"ed.terminalFg\":\"" + colorStr(t.terminalFg) + "\""
+    out = out + ",\"ed.ansiRed\":\"" + colorStr(t.ansiRed) + "\""
+    out = out + ",\"ed.ansiGreen\":\"" + colorStr(t.ansiGreen) + "\""
+    out = out + ",\"ed.ansiYellow\":\"" + colorStr(t.ansiYellow) + "\""
+    out = out + ",\"ed.ansiBlue\":\"" + colorStr(t.ansiBlue) + "\""
+    out = out + ",\"ed.ansiMagenta\":\"" + colorStr(t.ansiMagenta) + "\""
+    out = out + ",\"ed.ansiCyan\":\"" + colorStr(t.ansiCyan) + "\""
+    out = out + ",\"ed.scrollbarThumb\":\"" + colorStr(t.scrollbarThumb) + "\""
+    out = out + ",\"ed.scrollbarHover\":\"" + colorStr(t.scrollbarHover) + "\""
+    out = out + ",\"tk.keyword\":\"" + colorStr(t.keyword) + "\""
+    out = out + ",\"tk.keywordControl\":\"" + colorStr(t.keywordControl) + "\""
+    out = out + ",\"tk.keywordModifier\":\"" + colorStr(t.keywordModifier) + "\""
+    out = out + ",\"tk.type\":\"" + colorStr(t.type) + "\""
+    out = out + ",\"tk.string\":\"" + colorStr(t.stringColor) + "\""
+    out = out + ",\"tk.stringEscape\":\"" + colorStr(t.stringEscape) + "\""
+    out = out + ",\"tk.char\":\"" + colorStr(t.charColor) + "\""
+    out = out + ",\"tk.number\":\"" + colorStr(t.number) + "\""
+    out = out + ",\"tk.boolean\":\"" + colorStr(t.boolean) + "\""
+    out = out + ",\"tk.nullLiteral\":\"" + colorStr(t.nullLiteral) + "\""
+    out = out + ",\"tk.comment\":\"" + colorStr(t.comment) + "\""
+    out = out + ",\"tk.todo\":\"" + colorStr(t.todo) + "\""
+    out = out + ",\"tk.functionCall\":\"" + colorStr(t.functionCall) + "\""
+    out = out + ",\"tk.functionDecl\":\"" + colorStr(t.functionDecl) + "\""
+    out = out + ",\"tk.identifier\":\"" + colorStr(t.identifier) + "\""
+    out = out + ",\"tk.parameter\":\"" + colorStr(t.parameter) + "\""
+    out = out + ",\"tk.constant\":\"" + colorStr(t.constant) + "\""
+    out = out + ",\"tk.enumMember\":\"" + colorStr(t.enumMember) + "\""
+    out = out + ",\"tk.annotation\":\"" + colorStr(t.annotation) + "\""
+    out = out + ",\"tk.operator\":\"" + colorStr(t.operator) + "\""
+    out = out + ",\"tk.punctuation\":\"" + colorStr(t.punctuation) + "\""
+    out = out + ",\"tk.error\":\"" + colorStr(t.error) + "\""
+    out = out + ",\"tk.errorUnderline\":\"" + colorStr(t.errorUnderline) + "\""
+    out = out + ",\"tk.warningUnderline\":\"" + colorStr(t.warningUnderline) + "\""
+    out = out + "}"
+    return out
 }
 
 themeAt(Int index): String {
+    return themeToJson(themeAtTheme(index))
+}
+
+themeAtTheme(Int index): Theme {
     if (index == 1) {
-        return themeToJson(lightTheme())
+        return lightTheme()
     }
-    return themeToJson(darkTheme())
+    if (index == 2) {
+        return paletteNord()
+    }
+    if (index == 3) {
+        return paletteGitHubDark()
+    }
+    if (index == 4) {
+        return paletteSolarizedDark()
+    }
+    if (index == 5) {
+        return paletteMonokai()
+    }
+    return darkTheme()
 }
 
 themeNames(): String {
-    return json.encode(listOf("Escuro", "Claro"))
+    return json.encode(listOf("Dracula", "Claro", "Nord", "GitHub Dark", "Solarized Dark", "Monokai"))
+}
+
+// ── paletas curadas (mesmas do Kof-editor-theme-maker) ──
+
+paletteNord(): Theme {
+    var t = darkTheme()
+    t.name = "Nord"
+    t.bg = 0xFF2E3440
+    t.fg = 0xFFECEFF4
+    t.header = 0xFF3B4252
+    t.selection = 0xFF434C5E
+    t.currentLine = 0xFF3B4252
+    t.gutter = 0xFF7B88A1
+    t.terminal = 0xFF2E3440
+    t.terminalFg = 0xFFA3BE8C
+    t.keyword = 0xFF81A1C1
+    t.type = 0xFF88C0D0
+    t.stringColor = 0xFFA3BE8C
+    t.charColor = 0xFFA3BE8C
+    t.number = 0xFFB48EAD
+    t.comment = 0xFF616E88
+    t.operator = 0xFF81A1C1
+    t.punctuation = 0xFFECEFF4
+    t.identifier = 0xFFECEFF4
+    t.error = 0xFFBF616A
+    return t
+}
+
+paletteGitHubDark(): Theme {
+    var t = darkTheme()
+    t.name = "GitHub Dark"
+    t.bg = 0xFF0D1117
+    t.fg = 0xFFE6EDF3
+    t.header = 0xFF161B22
+    t.selection = 0xFF388BFD44
+    t.currentLine = 0xFF161B22
+    t.gutter = 0xFF6E7681
+    t.terminal = 0xFF0D1117
+    t.terminalFg = 0xFF7EE787
+    t.keyword = 0xFFFF7B72
+    t.type = 0xFF79C0FF
+    t.stringColor = 0xFFA5D6FF
+    t.charColor = 0xFFA5D6FF
+    t.number = 0xFFF2CC60
+    t.comment = 0xFF8B949E
+    t.operator = 0xFFFF7B72
+    t.punctuation = 0xFFE6EDF3
+    t.identifier = 0xFFE6EDF3
+    t.error = 0xFFF85149
+    return t
+}
+
+paletteSolarizedDark(): Theme {
+    var t = darkTheme()
+    t.name = "Solarized Dark"
+    t.bg = 0xFF002B36
+    t.fg = 0xFF93A1A1
+    t.header = 0xFF073642
+    t.selection = 0xFF274642
+    t.currentLine = 0xFF073642
+    t.gutter = 0xFF586E75
+    t.terminal = 0xFF002B36
+    t.terminalFg = 0xFF859900
+    t.keyword = 0xFF859900
+    t.type = 0xFF268BD2
+    t.stringColor = 0xFF2AA198
+    t.charColor = 0xFF2AA198
+    t.number = 0xFFD33682
+    t.comment = 0xFF586E75
+    t.operator = 0xFF859900
+    t.punctuation = 0xFF93A1A1
+    t.identifier = 0xFF93A1A1
+    t.error = 0xFFDC322F
+    return t
+}
+
+paletteMonokai(): Theme {
+    var t = darkTheme()
+    t.name = "Monokai"
+    t.bg = 0xFF272822
+    t.fg = 0xFFF8F8F2
+    t.header = 0xFF1E1F1C
+    t.selection = 0xFF49483E
+    t.currentLine = 0xFF3E3D32
+    t.gutter = 0xFF90908A
+    t.terminal = 0xFF1E1F1C
+    t.terminalFg = 0xFFA6E22E
+    t.keyword = 0xFFF92672
+    t.type = 0xFF66D9EF
+    t.stringColor = 0xFFE6DB74
+    t.charColor = 0xFFE6DB74
+    t.number = 0xFFAE81FF
+    t.comment = 0xFF75715E
+    t.operator = 0xFFF92672
+    t.punctuation = 0xFFF8F8F2
+    t.identifier = 0xFFF8F8F2
+    t.error = 0xFFF92672
+    return t
 }
 
 hex2(Int c): String {
@@ -112,24 +388,103 @@ hexByte(Int v): String {
 themeToYaml(Theme t): String {
     var out = "# tema do Kof Editor (chave: \"#RRGGBB\")\n"
     out = out + "name: \"" + t.name + "\"\n"
-    out = out + "bg: \"" + hex2(t.bg) + "\"\n"
-    out = out + "fg: \"" + hex2(t.fg) + "\"\n"
-    out = out + "header: \"" + hex2(t.header) + "\"\n"
-    out = out + "selection: \"" + hex2(t.selection) + "\"\n"
-    out = out + "currentLine: \"" + hex2(t.currentLine) + "\"\n"
-    out = out + "gutter: \"" + hex2(t.gutter) + "\"\n"
-    out = out + "terminal: \"" + hex2(t.terminal) + "\"\n"
-    out = out + "terminalFg: \"" + hex2(t.terminalFg) + "\"\n"
-    out = out + "keyword: \"" + hex2(t.keyword) + "\"\n"
-    out = out + "type: \"" + hex2(t.type) + "\"\n"
-    out = out + "string: \"" + hex2(t.stringColor) + "\"\n"
-    out = out + "char: \"" + hex2(t.charColor) + "\"\n"
-    out = out + "number: \"" + hex2(t.number) + "\"\n"
-    out = out + "comment: \"" + hex2(t.comment) + "\"\n"
-    out = out + "operator: \"" + hex2(t.operator) + "\"\n"
-    out = out + "punctuation: \"" + hex2(t.punctuation) + "\"\n"
-    out = out + "identifier: \"" + hex2(t.identifier) + "\"\n"
-    out = out + "error: \"" + hex2(t.error) + "\"\n"
+    // bloco 1: interface
+    out = out + "interface:\n"
+    out = out + "  headerBg: \"" + hex2(t.header) + "\"\n"
+    out = out + "  headerFg: \"" + hex2(t.headerFg) + "\"\n"
+    out = out + "  headerBorder: \"" + hex2(t.headerBorder) + "\"\n"
+    out = out + "  activityBg: \"" + hex2(t.activityBg) + "\"\n"
+    out = out + "  activityFg: \"" + hex2(t.activityFg) + "\"\n"
+    out = out + "  activityActive: \"" + hex2(t.activityActive) + "\"\n"
+    out = out + "  activityBadge: \"" + hex2(t.activityBadge) + "\"\n"
+    out = out + "  sidebarBg: \"" + hex2(t.sidebarBg) + "\"\n"
+    out = out + "  sidebarFg: \"" + hex2(t.sidebarFg) + "\"\n"
+    out = out + "  sidebarHover: \"" + hex2(t.sidebarHover) + "\"\n"
+    out = out + "  sidebarSelected: \"" + hex2(t.sidebarSelected) + "\"\n"
+    out = out + "  fileModified: \"" + hex2(t.fileModified) + "\"\n"
+    out = out + "  fileAdded: \"" + hex2(t.fileAdded) + "\"\n"
+    out = out + "  fileDeleted: \"" + hex2(t.fileDeleted) + "\"\n"
+    out = out + "  fileUntracked: \"" + hex2(t.fileUntracked) + "\"\n"
+    out = out + "  fileConflict: \"" + hex2(t.fileConflict) + "\"\n"
+    out = out + "  fileIgnored: \"" + hex2(t.fileIgnored) + "\"\n"
+    out = out + "  inputBg: \"" + hex2(t.inputBg) + "\"\n"
+    out = out + "  inputFg: \"" + hex2(t.inputFg) + "\"\n"
+    out = out + "  inputBorder: \"" + hex2(t.inputBorder) + "\"\n"
+    out = out + "  inputBorderFocus: \"" + hex2(t.inputBorderFocus) + "\"\n"
+    out = out + "  inputPlaceholder: \"" + hex2(t.inputPlaceholder) + "\"\n"
+    out = out + "  tabBg: \"" + hex2(t.tabBg) + "\"\n"
+    out = out + "  tabFg: \"" + hex2(t.tabFg) + "\"\n"
+    out = out + "  tabActiveBg: \"" + hex2(t.tabActiveBg) + "\"\n"
+    out = out + "  tabActiveFg: \"" + hex2(t.tabActiveFg) + "\"\n"
+    out = out + "  tabBorder: \"" + hex2(t.tabBorder) + "\"\n"
+    out = out + "  tabDotModified: \"" + hex2(t.tabDotModified) + "\"\n"
+    out = out + "  menuBg: \"" + hex2(t.menuBg) + "\"\n"
+    out = out + "  menuFg: \"" + hex2(t.menuFg) + "\"\n"
+    out = out + "  menuHover: \"" + hex2(t.menuHover) + "\"\n"
+    // bloco 2: editor
+    out = out + "editor:\n"
+    out = out + "  bg: \"" + hex2(t.bg) + "\"\n"
+    out = out + "  fg: \"" + hex2(t.fg) + "\"\n"
+    out = out + "  cursor: \"" + hex2(t.cursor) + "\"\n"
+    out = out + "  selectionBg: \"" + hex2(t.selection) + "\"\n"
+    out = out + "  currentLineBg: \"" + hex2(t.currentLine) + "\"\n"
+    out = out + "  currentLineBorder: \"" + hex2(t.currentLineBorder) + "\"\n"
+    out = out + "  indentGuide: \"" + hex2(t.indentGuide) + "\"\n"
+    out = out + "  bracketMatch: \"" + hex2(t.bracketMatch) + "\"\n"
+    out = out + "  findHighlight: \"" + hex2(t.findHighlight) + "\"\n"
+    out = out + "  gutterBg: \"" + hex2(t.bg) + "\"\n"
+    out = out + "  gutterFg: \"" + hex2(t.gutter) + "\"\n"
+    out = out + "  gutterActive: \"" + hex2(t.gutterActive) + "\"\n"
+    out = out + "  foldingIcon: \"" + hex2(t.foldingIcon) + "\"\n"
+    out = out + "  diffAddBg: \"" + hex2(t.diffAddBg) + "\"\n"
+    out = out + "  diffAddSide: \"" + hex2(t.diffAddSide) + "\"\n"
+    out = out + "  diffDelBg: \"" + hex2(t.diffDelBg) + "\"\n"
+    out = out + "  diffDelSide: \"" + hex2(t.diffDelSide) + "\"\n"
+    out = out + "  diffMarkerFg: \"" + hex2(t.diffMarkerFg) + "\"\n"
+    out = out + "  minimapBg: \"" + hex2(t.minimapBg) + "\"\n"
+    out = out + "  minimapFg: \"" + hex2(t.minimapFg) + "\"\n"
+    out = out + "  minimapCurrentLine: \"" + hex2(t.minimapCurrentLine) + "\"\n"
+    out = out + "  minimapDiffAdd: \"" + hex2(t.minimapDiffAdd) + "\"\n"
+    out = out + "  minimapDiffDel: \"" + hex2(t.minimapDiffDel) + "\"\n"
+    out = out + "  statusBg: \"" + hex2(t.statusBg) + "\"\n"
+    out = out + "  statusFg: \"" + hex2(t.statusFg) + "\"\n"
+    out = out + "  statusAccent: \"" + hex2(t.statusAccent) + "\"\n"
+    out = out + "  terminalBg: \"" + hex2(t.terminal) + "\"\n"
+    out = out + "  terminalFg: \"" + hex2(t.terminalFg) + "\"\n"
+    out = out + "  ansiRed: \"" + hex2(t.ansiRed) + "\"\n"
+    out = out + "  ansiGreen: \"" + hex2(t.ansiGreen) + "\"\n"
+    out = out + "  ansiYellow: \"" + hex2(t.ansiYellow) + "\"\n"
+    out = out + "  ansiBlue: \"" + hex2(t.ansiBlue) + "\"\n"
+    out = out + "  ansiMagenta: \"" + hex2(t.ansiMagenta) + "\"\n"
+    out = out + "  ansiCyan: \"" + hex2(t.ansiCyan) + "\"\n"
+    out = out + "  scrollbarThumb: \"" + hex2(t.scrollbarThumb) + "\"\n"
+    out = out + "  scrollbarHover: \"" + hex2(t.scrollbarHover) + "\"\n"
+    // bloco 3: tokens
+    out = out + "tokens:\n"
+    out = out + "  keyword: \"" + hex2(t.keyword) + "\"\n"
+    out = out + "  keywordControl: \"" + hex2(t.keywordControl) + "\"\n"
+    out = out + "  keywordModifier: \"" + hex2(t.keywordModifier) + "\"\n"
+    out = out + "  type: \"" + hex2(t.type) + "\"\n"
+    out = out + "  string: \"" + hex2(t.stringColor) + "\"\n"
+    out = out + "  stringEscape: \"" + hex2(t.stringEscape) + "\"\n"
+    out = out + "  char: \"" + hex2(t.charColor) + "\"\n"
+    out = out + "  number: \"" + hex2(t.number) + "\"\n"
+    out = out + "  boolean: \"" + hex2(t.boolean) + "\"\n"
+    out = out + "  nullLiteral: \"" + hex2(t.nullLiteral) + "\"\n"
+    out = out + "  comment: \"" + hex2(t.comment) + "\"\n"
+    out = out + "  todo: \"" + hex2(t.todo) + "\"\n"
+    out = out + "  functionCall: \"" + hex2(t.functionCall) + "\"\n"
+    out = out + "  functionDecl: \"" + hex2(t.functionDecl) + "\"\n"
+    out = out + "  identifier: \"" + hex2(t.identifier) + "\"\n"
+    out = out + "  parameter: \"" + hex2(t.parameter) + "\"\n"
+    out = out + "  constant: \"" + hex2(t.constant) + "\"\n"
+    out = out + "  enumMember: \"" + hex2(t.enumMember) + "\"\n"
+    out = out + "  annotation: \"" + hex2(t.annotation) + "\"\n"
+    out = out + "  operator: \"" + hex2(t.operator) + "\"\n"
+    out = out + "  punctuation: \"" + hex2(t.punctuation) + "\"\n"
+    out = out + "  error: \"" + hex2(t.error) + "\"\n"
+    out = out + "  errorUnderline: \"" + hex2(t.errorUnderline) + "\"\n"
+    out = out + "  warningUnderline: \"" + hex2(t.warningUnderline) + "\"\n"
     return out
 }
 
@@ -177,56 +532,233 @@ colorFromHex(String s): Int {
 themeFromYaml(String yaml): Theme {
     var t = darkTheme()
     var lines = yaml.split("\n")
+    var block = ""
     for (var line in lines) {
         var l = line.trim()
         var colon = l.indexOf(":")
         if (colon <= 0) {
             continue
         }
+        var first = " "
+        if (line.length() > 0) {
+            first = line.substring(0, 1)
+        }
+        var indented = first == " " || first == "\t"
         var key = l.substring(0, colon).trim()
         var v = yamlValue(l)
+        if (indented) {
+            if (block == "interface") {
+                themeApplyField(t, "if." + key, v)
+            } else if (block == "editor") {
+                themeApplyField(t, "ed." + key, v)
+            } else if (block == "tokens") {
+                themeApplyField(t, "tk." + key, v)
+            }
+            continue
+        }
+        if (l == "interface:" || l == "editor:" || l == "tokens:") {
+            block = key
+            continue
+        }
+        block = ""
         if (v.length() == 0) {
             continue
         }
-        if (l.startsWith("name:")) {
-            t.name = v
-        } else if (l.startsWith("bg:")) {
-            t.bg = colorFromHex(v)
-        } else if (l.startsWith("fg:")) {
-            t.fg = colorFromHex(v)
-        } else if (l.startsWith("header:")) {
-            t.header = colorFromHex(v)
-        } else if (l.startsWith("selection:")) {
-            t.selection = colorFromHex(v)
-        } else if (l.startsWith("currentLine:")) {
-            t.currentLine = colorFromHex(v)
-        } else if (l.startsWith("gutter:")) {
-            t.gutter = colorFromHex(v)
-        } else if (l.startsWith("terminal:")) {
-            t.terminal = colorFromHex(v)
-        } else if (l.startsWith("terminalFg:")) {
-            t.terminalFg = colorFromHex(v)
-        } else if (l.startsWith("keyword:")) {
-            t.keyword = colorFromHex(v)
-        } else if (l.startsWith("type:")) {
-            t.type = colorFromHex(v)
-        } else if (l.startsWith("string:")) {
-            t.stringColor = colorFromHex(v)
-        } else if (l.startsWith("char:")) {
-            t.charColor = colorFromHex(v)
-        } else if (l.startsWith("number:")) {
-            t.number = colorFromHex(v)
-        } else if (l.startsWith("comment:")) {
-            t.comment = colorFromHex(v)
-        } else if (l.startsWith("operator:")) {
-            t.operator = colorFromHex(v)
-        } else if (l.startsWith("punctuation:")) {
-            t.punctuation = colorFromHex(v)
-        } else if (l.startsWith("identifier:")) {
-            t.identifier = colorFromHex(v)
-        } else if (l.startsWith("error:")) {
-            t.error = colorFromHex(v)
-        }
+        themeApplyField(t, key, v)
     }
     return t
+}
+
+// dispatcher: 1 ponto de mapeamento chave→campo (flat e blocos)
+themeApplyField(Theme t, String key, String v): void {
+    if (key == "name") {
+        if (v.length() > 0) {
+            t.name = v
+        }
+        return
+    }
+    if (v.length() < 7) {
+        return
+    }
+    if (key == "bg" || key == "ed.bg") {
+        t.bg = colorFromHex(v)
+    } else if (key == "fg" || key == "ed.fg") {
+        t.fg = colorFromHex(v)
+    } else if (key == "header" || key == "if.headerBg") {
+        t.header = colorFromHex(v)
+    } else if (key == "selection" || key == "ed.selectionBg") {
+        t.selection = colorFromHex(v)
+    } else if (key == "currentLine" || key == "ed.currentLineBg") {
+        t.currentLine = colorFromHex(v)
+    } else if (key == "gutter" || key == "ed.gutterFg") {
+        t.gutter = colorFromHex(v)
+    } else if (key == "terminal" || key == "ed.terminalBg") {
+        t.terminal = colorFromHex(v)
+    } else if (key == "terminalFg" || key == "ed.terminalFg") {
+        t.terminalFg = colorFromHex(v)
+    } else if (key == "keyword" || key == "tk.keyword") {
+        t.keyword = colorFromHex(v)
+    } else if (key == "type" || key == "tk.type") {
+        t.type = colorFromHex(v)
+    } else if (key == "string" || key == "tk.string") {
+        t.stringColor = colorFromHex(v)
+    } else if (key == "char" || key == "tk.char") {
+        t.charColor = colorFromHex(v)
+    } else if (key == "number" || key == "tk.number") {
+        t.number = colorFromHex(v)
+    } else if (key == "comment" || key == "tk.comment") {
+        t.comment = colorFromHex(v)
+    } else if (key == "operator" || key == "tk.operator") {
+        t.operator = colorFromHex(v)
+    } else if (key == "punctuation" || key == "tk.punctuation") {
+        t.punctuation = colorFromHex(v)
+    } else if (key == "identifier" || key == "tk.identifier") {
+        t.identifier = colorFromHex(v)
+    } else if (key == "error" || key == "tk.error") {
+        t.error = colorFromHex(v)
+    } else if (key == "if.headerFg") {
+        t.headerFg = colorFromHex(v)
+    } else if (key == "if.headerBorder") {
+        t.headerBorder = colorFromHex(v)
+    } else if (key == "if.activityBg") {
+        t.activityBg = colorFromHex(v)
+    } else if (key == "if.activityFg") {
+        t.activityFg = colorFromHex(v)
+    } else if (key == "if.activityActive") {
+        t.activityActive = colorFromHex(v)
+    } else if (key == "if.activityBadge") {
+        t.activityBadge = colorFromHex(v)
+    } else if (key == "if.sidebarBg") {
+        t.sidebarBg = colorFromHex(v)
+    } else if (key == "if.sidebarFg") {
+        t.sidebarFg = colorFromHex(v)
+    } else if (key == "if.sidebarHover") {
+        t.sidebarHover = colorFromHex(v)
+    } else if (key == "if.sidebarSelected") {
+        t.sidebarSelected = colorFromHex(v)
+    } else if (key == "if.fileModified") {
+        t.fileModified = colorFromHex(v)
+    } else if (key == "if.fileAdded") {
+        t.fileAdded = colorFromHex(v)
+    } else if (key == "if.fileDeleted") {
+        t.fileDeleted = colorFromHex(v)
+    } else if (key == "if.fileUntracked") {
+        t.fileUntracked = colorFromHex(v)
+    } else if (key == "if.fileConflict") {
+        t.fileConflict = colorFromHex(v)
+    } else if (key == "if.fileIgnored") {
+        t.fileIgnored = colorFromHex(v)
+    } else if (key == "if.inputBg") {
+        t.inputBg = colorFromHex(v)
+    } else if (key == "if.inputFg") {
+        t.inputFg = colorFromHex(v)
+    } else if (key == "if.inputBorder") {
+        t.inputBorder = colorFromHex(v)
+    } else if (key == "if.inputBorderFocus") {
+        t.inputBorderFocus = colorFromHex(v)
+    } else if (key == "if.inputPlaceholder") {
+        t.inputPlaceholder = colorFromHex(v)
+    } else if (key == "if.tabBg") {
+        t.tabBg = colorFromHex(v)
+    } else if (key == "if.tabFg") {
+        t.tabFg = colorFromHex(v)
+    } else if (key == "if.tabActiveBg") {
+        t.tabActiveBg = colorFromHex(v)
+    } else if (key == "if.tabActiveFg") {
+        t.tabActiveFg = colorFromHex(v)
+    } else if (key == "if.tabBorder") {
+        t.tabBorder = colorFromHex(v)
+    } else if (key == "if.tabDotModified") {
+        t.tabDotModified = colorFromHex(v)
+    } else if (key == "if.menuBg") {
+        t.menuBg = colorFromHex(v)
+    } else if (key == "if.menuFg") {
+        t.menuFg = colorFromHex(v)
+    } else if (key == "if.menuHover") {
+        t.menuHover = colorFromHex(v)
+    } else if (key == "ed.cursor") {
+        t.cursor = colorFromHex(v)
+    } else if (key == "ed.currentLineBorder") {
+        t.currentLineBorder = colorFromHex(v)
+    } else if (key == "ed.indentGuide") {
+        t.indentGuide = colorFromHex(v)
+    } else if (key == "ed.bracketMatch") {
+        t.bracketMatch = colorFromHex(v)
+    } else if (key == "ed.findHighlight") {
+        t.findHighlight = colorFromHex(v)
+    } else if (key == "ed.gutterActive") {
+        t.gutterActive = colorFromHex(v)
+    } else if (key == "ed.foldingIcon") {
+        t.foldingIcon = colorFromHex(v)
+    } else if (key == "ed.diffAddBg") {
+        t.diffAddBg = colorFromHex(v)
+    } else if (key == "ed.diffAddSide") {
+        t.diffAddSide = colorFromHex(v)
+    } else if (key == "ed.diffDelBg") {
+        t.diffDelBg = colorFromHex(v)
+    } else if (key == "ed.diffDelSide") {
+        t.diffDelSide = colorFromHex(v)
+    } else if (key == "ed.diffMarkerFg") {
+        t.diffMarkerFg = colorFromHex(v)
+    } else if (key == "ed.minimapBg") {
+        t.minimapBg = colorFromHex(v)
+    } else if (key == "ed.minimapFg") {
+        t.minimapFg = colorFromHex(v)
+    } else if (key == "ed.minimapCurrentLine") {
+        t.minimapCurrentLine = colorFromHex(v)
+    } else if (key == "ed.minimapDiffAdd") {
+        t.minimapDiffAdd = colorFromHex(v)
+    } else if (key == "ed.minimapDiffDel") {
+        t.minimapDiffDel = colorFromHex(v)
+    } else if (key == "ed.statusBg") {
+        t.statusBg = colorFromHex(v)
+    } else if (key == "ed.statusFg") {
+        t.statusFg = colorFromHex(v)
+    } else if (key == "ed.statusAccent") {
+        t.statusAccent = colorFromHex(v)
+    } else if (key == "ed.scrollbarThumb") {
+        t.scrollbarThumb = colorFromHex(v)
+    } else if (key == "ed.scrollbarHover") {
+        t.scrollbarHover = colorFromHex(v)
+    } else if (key == "ed.ansiRed") {
+        t.ansiRed = colorFromHex(v)
+    } else if (key == "ed.ansiGreen") {
+        t.ansiGreen = colorFromHex(v)
+    } else if (key == "ed.ansiYellow") {
+        t.ansiYellow = colorFromHex(v)
+    } else if (key == "ed.ansiBlue") {
+        t.ansiBlue = colorFromHex(v)
+    } else if (key == "ed.ansiMagenta") {
+        t.ansiMagenta = colorFromHex(v)
+    } else if (key == "ed.ansiCyan") {
+        t.ansiCyan = colorFromHex(v)
+    } else if (key == "tk.keywordControl") {
+        t.keywordControl = colorFromHex(v)
+    } else if (key == "tk.keywordModifier") {
+        t.keywordModifier = colorFromHex(v)
+    } else if (key == "tk.stringEscape") {
+        t.stringEscape = colorFromHex(v)
+    } else if (key == "tk.boolean") {
+        t.boolean = colorFromHex(v)
+    } else if (key == "tk.nullLiteral") {
+        t.nullLiteral = colorFromHex(v)
+    } else if (key == "tk.todo") {
+        t.todo = colorFromHex(v)
+    } else if (key == "tk.functionCall") {
+        t.functionCall = colorFromHex(v)
+    } else if (key == "tk.functionDecl") {
+        t.functionDecl = colorFromHex(v)
+    } else if (key == "tk.parameter") {
+        t.parameter = colorFromHex(v)
+    } else if (key == "tk.constant") {
+        t.constant = colorFromHex(v)
+    } else if (key == "tk.enumMember") {
+        t.enumMember = colorFromHex(v)
+    } else if (key == "tk.annotation") {
+        t.annotation = colorFromHex(v)
+    } else if (key == "tk.errorUnderline") {
+        t.errorUnderline = colorFromHex(v)
+    } else if (key == "tk.warningUnderline") {
+        t.warningUnderline = colorFromHex(v)
+    }
 }
