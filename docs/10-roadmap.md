@@ -27,24 +27,24 @@ highlight, menu, temas, problemas, atalhos, pastas recentes, templates.
 
 ## Faltando (ordem sugerida)
 
+Estado 30/08/2026: os itens 3, 4, 5, 10, 14 **já existem** (paleta com filtro,
+busca com resultados clicáveis, minimap clicável, breadcrumbs). Itens novos
+implementados no commit `e35d12b`: Ctrl+F/F3 (buscar no arquivo), Ctrl+G (ir
+para linha), Ctrl+D/Ctrl+Shift+K, F2 (renomear), F12 (definição), Alt+Z wrap,
+auto-save, terminal com cwd/histórico/ANSI, sidebar responsiva (overlay no
+mobile), tema exportar/importar YAML.
+
 | # | Feature | Bloqueio | Notas |
 |---|---------|----------|-------|
 | 1 | **Multi-caret / seleção em bloco** (Alt+Click, Ctrl+Alt+↑↓, Ctrl+Shift+L) | editor de texto web do KofJS (DOM) ou overlay próprio | o textarea tem 1 caret |
 | 2 | **Folding (recolher blocos)** | renderer custom (pre não sabe de linhas) | possível com overlay por linha |
-| 3 | **Paleta de comandos web** (Ctrl+Shift+P) com filtro | — | substitui o prompt atual |
-| 4 | **Buscar na pasta com resultados clicáveis** | — | endpoint /api/search existe (searchDir) |
-| 5 | **Painel de busca lateral (Ctrl+Shift+F)** | — | |
-| 6 | ~~**Terminal nativo em Kof** (processos)~~ — destravado | **✅ F4 resolvido** (`process.run`) | migrar do shell do host para `process.run` em Kof |
-| 7 | ~~**Git nativo em Kof**~~ — destravado | **✅ F4 resolvido** (`process.run`) | migrar do host-side para `process.run` |
 | 8 | **Run/Debug com breakpoints** — destravado parcialmente | debugger MVP do Kof chegou (Fases 1-3): `kof debug` DAP sobre stdio, breakpoints por linha Kof + call stack (JVM); locals/stepping = Fase 7 | integrar o DAP ao painel do editor |
-| 9 | ~~**Editor web 100% KofJS** (sem servidor)~~ — **RESOLVIDO (verificado 0.0.14)** | J6/J2/J4/J5 fechados; o núcleo roda as 7 seções idênticas à JVM (com workarounds J7) | manter workarounds até B19/B20/J7 subirem |
-| 10 | **Minimap web** | overlay | possível |
-| 11 | **Snippets configuráveis** (user snippets) | — | |
-| 12 | **Settings web** (settings.json na UI) | — | existe no legado Swing |
-| 13 | **Detecção de encoding / fim de linha** | — | |
-| 14 | **Breadcrumbs web** | — | legado Swing tem |
+| 11 | **Snippets configuráveis** (user snippets em arquivo) | — | snippets fixos existem na paleta |
+| 12 | **Settings web** (settings.json na UI) | — | auto-save/wrap já têm toggle na paleta |
+| 13 | **Detecção de encoding / fim de linha** | — | crlfToLf já normaliza |
 | 15 | **Reload do servidor ao salvar .kf do editor** | — | o editor edita o próprio front |
 | 16 | **Drag & drop de arquivos no editor web** | HTML5 drag-drop | |
+| 17 | **Terminal PTY real** (digitar dentro de htop/vim) | **F-pty no Kof**: `process.run` é one-shot, sem stdin interativo/PTY | precisa `process.spawn` com pipes vivos no Kof4j; o emulador visual (ANSI/cursor/grid) pode ser escrito em Kof — parser CSI igual ao Lexer |
 
 ## Dependências do Kof (destravam itens acima)
 

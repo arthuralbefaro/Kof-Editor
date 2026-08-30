@@ -358,3 +358,29 @@ Validado: `printf 'olá — ✓\n' | curl -X POST /tokenize` → tokens ok; web.
 - **KofJS** (J6) ainda quebra no for: `KofJS: for-loop expected Label(end)` (JsBackend.parseLoop:739) — o editor estático segue esperando.
 - **Content-Type** — agora **no upstream** (`77a955c`): `KofHttpServer.buildResponse` detecta `<!DOCTYPE`/`<html` → `text/html`, `:root`/`body {`/`<style` → `text/css`, `var `/`function `/`document.`/`async ` → `application/javascript`. Sem isso o navegador renderiza o editor como texto plano. Verificado: `/` → text/html, `/editor.css` → text/css, `/editor.js` → application/javascript.
 - stdlib nova: kof.security (JWT), kof.web (routing/middleware), kof.config, kof.log, debugger (kof-debug).
+
+## F10 — PTY / process.spawn com stdin vivo (30/08/2026)
+
+**Bloqueio**: `process.run` é one-shot (aguarda fim, devolve stdout/stderr).
+O terminal do editor não consegue stdin interativo — htop/vim não aceitam
+teclas, `sudo` pede senha por fora, `readLine()` dentro de TUI trava.
+
+**Impacto no editor**: terminal vira "executor de comandos" (histórico +
+ANSI renderizado já cobrem 80% do uso dev), mas sem PTY real não há sessão
+interativa.
+
+**O que destrava (proposta para o Kof4j)**:
+1. `process.spawn(cmd) -> Handle` com `write(String)`, `read(): String`,
+   `resize(cols, rows)`, `kill()` — pipes vivos no JVM (ProcessBuilder) e
+   nativo (fork/exec + pipes; PTY completo via forkpty)
+2. `kof.pty(cmd)` (opcional, fase 2): `openpty` no native,(ptmx/jdk Pty?) na
+   JVM — aí htop/vim rodam de verdade dentro do editor
+3. Com (1) o editor já pode rodar o emulador de terminal **escrito em Kof**
+   (parser CSI/SGR — mesmo design do `Lexer` do editor: scanner de escapes,
+   grid `List<List<Cell>>`, render por spans)
+
+Repro do gap:
+```kof
+var p = process.run("vim", "x.txt")   // trava 15s até o socket timeout
+// não há como mandar teclas para o stdin do vim
+```
