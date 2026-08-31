@@ -2,55 +2,107 @@ name: release
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  release-linux:
-    runs-on: ubuntu-latest
+  package:
+    name: Package (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+          - os: macos-latest
+            target: macos-arm64
+          - os: windows-latest
+            target: windows-x86_64
     steps:
       - uses: actions/checkout@v4
-        with:
-          repository: KofLang/Kof4j
-          path: kof4j
 
-      - uses: actions/checkout@v4
-        with:
-          path: editor
-
-      - name: Setup Java 21 + Maven
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
 
-      - name: Build Kof (jars) + webview
+      # kof CLI p/ combine + check
+      - name: Install kof
+        if: matrix.target != 'windows-x86_64'
         run: |
-          cd kof4j
-          mvn -q package -DskipTests
-          mkdir -p "$HOME/.local/share/kof-dev/lib"
-          cp kof-cli/target/kof-cli-0.0.5-alpha.jar kof-compiler/target/kof-compiler-0.0.5-alpha.jar \
-             kof-runtime/target/kof-runtime-0.0.5-alpha.jar \
-             $(find . -name "asm*.jar" | head -1) $(find . -name "flatlaf*.jar" | head -1) \
-             "$HOME/.local/share/kof-dev/lib/"
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gcc pkg-config libwebkit2gtk-4.1-dev
-          bash scripts/build-webview.sh
-          cd ..
+          curl -L https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-linux-x86_64/kof-0.2.5-beta-linux-x86_64.tar.gz -o kof.tar.gz
+          KOFDIR=$(tar tzf kof.tar.gz | head -1 | cut -d/ -f1)
+          tar xzf kof.tar.gz
+          echo "$PWD/$KOFDIR/bin" >> "$GITHUB_PATH"
 
-      - name: Release packages
+      - name: Install kof (windows)
+        if: matrix.target == 'windows-x86_64'
+        shell: bash
         run: |
-          chmod +x editor/scripts/release.sh
-          ./editor/scripts/release.sh --jvm
+          curl -L https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-windows-x86_64/kof-0.2.5-beta-windows-x86_64.zip -o kof.zip
+          powershell -Command "Expand-Archive -Force kof.zip kofdist"
+          KOFDIR=$(ls -d kof-distro*/ 2>/dev/null | head -1 || true)
+          if [ -z "$KOFDIR" ]; then KOFDIR=$(find . -maxdepth 1 -type d ! -name '.' ! -name 'kof*' ! -name 'editor' | head -1); fi
+          ls -la
+          echo "$PWD/$KOFDIR/bin" >> "$GITHUB_PATH" || echo "$PWD/kof-*/bin" >> "$GITHUB_PATH"
 
-      - name: Upload artifacts
+      - name: Package (instalador)
+        shell: bash
+        run: bash scripts/package-editor.sh
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kof-editor-linux
-          path: editor/dist/*.tar.gz
+          name: kof-editor-${{ matrix.target }}
+          path: |
+            dist/kof-editor-install-*.tar.gz
+            dist/kof-editor-install-*.zip
+            dist/SHA256SUMS
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+  release:
+    name: Publish release
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          files: editor/dist/*.tar.gz
+          path: dist
+
+      - name: Prepare assets
+        run: |
+          mkdir -p assets
+          find . -path '*/dist/*' \( -name 'kof-editor-install-*.tar.gz' -o -name 'kof-editor-install-*.zip' \) -exec cp {} assets/ \;
+          # merge dos SHA256SUMS por plataforma
+          find . -name SHA256SUMS -path '*/dist/*' -exec cat {} \; > assets/SHA256SUMS || true
+          ls -la assets/
+
+      - name: Release (tag fixa, atualizada a cada push)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: kof-editor-0.1.0-beta
+          name: Kof Editor 0.1.0-beta
+          body: |
+            Instaladores do Kof Editor (0.1.0-beta).
+
+            ## Instalar
+            1. Baixe o pacote do seu SO (abaixo)
+            2. Extraia
+            3. Rode `install.sh` (linux/macos) ou `install.bat` (windows)
+
+            O instalador baixa o runtime Kof (com JDK embutido) na primeira
+            execução e cria o launcher `kof-editor`. Depois:
+            ```
+            kof-editor
+            # abra http://localhost:8765
+            ```
+          files: assets/*
+          draft: false
+          prerelease: true
