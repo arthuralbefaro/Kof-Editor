@@ -53,6 +53,7 @@ class Theme {
     Int fileUntracked = 0xFF8BE9FD
     Int fileConflict = 0xFFFF79C6
     Int fileIgnored = 0xFF6272A4
+    Int buttonBg = 0xFF44475A
     Int inputBg = 0xFF282A36
     Int inputFg = 0xFFF8F8F2
     Int inputBorder = 0xFF44475A
@@ -255,6 +256,7 @@ themeToJson(Theme t): String {
     out = out + ",\"if.fileUntracked\":\"" + colorStr(t.fileUntracked) + "\""
     out = out + ",\"if.fileConflict\":\"" + colorStr(t.fileConflict) + "\""
     out = out + ",\"if.fileIgnored\":\"" + colorStr(t.fileIgnored) + "\""
+    out = out + ",\"if.buttonBg\":\"" + colorStr(t.buttonBg) + "\""
     out = out + ",\"if.inputBg\":\"" + colorStr(t.inputBg) + "\""
     out = out + ",\"if.inputFg\":\"" + colorStr(t.inputFg) + "\""
     out = out + ",\"if.inputBorder\":\"" + colorStr(t.inputBorder) + "\""
@@ -738,6 +740,8 @@ themeApplyField(Theme t, String key, String v): void {
         t.fileConflict = colorFromHex(v)
     } else if (key == "if.fileIgnored") {
         t.fileIgnored = colorFromHex(v)
+    } else if (key == "if.buttonBg") {
+        t.buttonBg = colorFromHex(v)
     } else if (key == "if.inputBg") {
         t.inputBg = colorFromHex(v)
     } else if (key == "if.inputFg") {

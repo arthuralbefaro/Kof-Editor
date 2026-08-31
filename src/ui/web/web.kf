@@ -854,6 +854,7 @@ pageJs(): String {
         "\n" +
         "function applyThemeJson(t) {\n" +
         "  function rgb(v) {\n" +
+        "    if (typeof v !== 'string' || v.indexOf(';') < 0) v = '0;0;0';\n" +
         "    var p = v.split(';');\n" +
         "    return 'rgb(' + p[0] + ',' + p[1] + ',' + p[2] + ')';\n" +
         "  }\n" +
@@ -879,7 +880,7 @@ pageJs(): String {
         "    '--status-bg': rgb(v('ed.statusBg', t.header)), '--status-fg': rgb(v('ed.statusFg', t.comment)), '--status-accent': rgb(v('ed.statusAccent', t.type)),\n" +
         "    '--terminal-bg': rgb(v('ed.terminalBg', t.terminal)), '--terminal-fg': rgb(v('ed.terminalFg', t.terminalFg)),\n" +
         "    '--scrollbar': rgb(v('ed.scrollbarThumb', t.selection)),\n" +
-        "    '--btn': rgb(v('if.buttonBg', t.selection)), '--input': rgb(v('if.inputBg', t.bg))\n" +
+        "    '--btn': rgb(v('if.buttonBg', v('if.sidebarHover', '0;0;0'))), '--input': rgb(v('if.inputBg', v('ed.bg', '0;0;0')))\n" +
         "  };\n" +
         "  for (var k in vars) document.documentElement.style.setProperty(k, vars[k]);\n" +
         "  if (window._mmTokens) renderMinimap(window._mmTokens);\n" +
