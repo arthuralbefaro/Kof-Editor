@@ -51,7 +51,10 @@ jobs:
             KOFDIR=$(find kofdist -maxdepth 1 -type d | tail -1)
           else
             curl -sL "$JURL" -o kof.tar.gz
-            KOFDIR=$(tar tzf kof.tar.gz | head -1 | cut -d/ -f1)
+            case "${{ matrix.target }}" in
+              macos-*) KOFDIR="kof-0.2.5-beta-macos-arm64" ;;
+              *)       KOFDIR="kof-0.2.5-beta-linux-x86_64" ;;
+            esac
             tar xzf kof.tar.gz
           fi
           echo "$PWD/$KOFDIR/bin" >> "$GITHUB_PATH"

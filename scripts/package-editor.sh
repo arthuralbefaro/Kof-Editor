@@ -64,7 +64,19 @@ cp "$KOF_JAR" "$JAR"
 mkdir -p "$STAGE/editor"
 cp "$ROOT/build/editor-web.kf" "$STAGE/editor/src.kf"
 cp "$ROOT/kof.png" "$STAGE/editor/kof.png" 2>/dev/null || true
-(cd "$STAGE" && zip -q "$JAR" editor/src.kf editor/kof.png)
+# adicionar src.kf + ícone ao jar (zip pode não existir; usar python zipfile como fallback)
+if command -v zip >/dev/null 2>&1; then
+    (cd "$STAGE" && zip -q "$JAR" editor/src.kf editor/kof.png)
+else
+    (cd "$STAGE" && python3 - <<PYZIP
+import zipfile
+z = zipfile.ZipFile("kof-editor.jar", "a")
+z.write("editor/src.kf")
+z.write("editor/kof.png")
+z.close()
+PYZIP
+)
+fi
 echo "  kof-editor.jar: $(du -h "$JAR" | cut -f1)"
 
 # 2) instalador unix (linux/macos): cria launcher/janela/desktop; baixa JDK se faltar
