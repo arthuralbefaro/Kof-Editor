@@ -87,7 +87,12 @@ cat > "$STAGE/install.sh" <<'INSTALL'
 set -euo pipefail
 
 DEST="${KOF_EDITOR_HOME:-$HOME/.local/share/kof-editor}"
-BIN_DIR="$HOME/.local/bin"
+# bin dir: /usr/local/bin se escrevível, senão ~/.local/bin
+if [ -w /usr/local/bin ] || [ -w /usr/local ]; then
+    BIN_DIR="/usr/local/bin"
+else
+    BIN_DIR="$HOME/.local/bin"
+fi
 HERE="$(cd "$(dirname "$0")" && pwd)"
 JDK_URL_LINUX="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-linux-x86_64/kof-0.2.5-beta-linux-x86_64.tar.gz"
 JDK_URL_MACOS="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-macos-arm64/kof-0.2.5-beta-macos-arm64.tar.gz"
@@ -187,9 +192,27 @@ MimeType=text/plain;text/x-kof;application/json;text/markdown;
 DESKTOP
 fi
 
+# garantir BIN_DIR no PATH (shell configs)
+case ":$PATH:" in
+    *":$BIN_DIR:"*) ;;
+    *)
+        for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            if [ -f "$RC" ] && ! grep -q "$BIN_DIR" "$RC"; then
+                printf '\n# adicionado pelo instalador do Kof Editor\ncase ":$PATH:" in *":%s:"*) ;; *) export PATH="%s:$PATH";; esac\n' "$BIN_DIR" "$BIN_DIR" >> "$RC"
+            fi
+        done
+        ;;
+esac
+
 echo "== pronto =="
 echo "  rode:     kof-editor          (janela nativa, se WebKitGTK disponível)"
-echo "  navegador http://localhost:8765"
+if ! case ":$PATH:" in *":$BIN_DIR:"*) false;; *) true;; esac; then
+    echo "  navegador http://localhost:8765"
+else
+    echo ""
+    echo "  ATENÇÃO: $BIN_DIR não está no seu PATH."
+    echo "  Ou abra um novo terminal, ou rode:  source ~/.bashrc"
+fi
 echo "  parar:    kof-editor --stop"
 INSTALL
 
