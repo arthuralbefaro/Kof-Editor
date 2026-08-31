@@ -410,6 +410,7 @@ pageJs(): String {
         "  var g = '';\n" +
         "  for (var i = 1; i <= lines; i++) g += '<span data-ln=\"' + i + '\">' + i + '</span>\\n';\n" +
         "  gutter.innerHTML = g;\n" +
+        "  window._mmTokens = tokens;\n" +
         "  renderMinimap(tokens);\n" +
         "  syncScroll();\n" +
         "  updateStatus();\n" +
@@ -880,6 +881,7 @@ pageJs(): String {
         "    '--scrollbar': rgb(v('ed.scrollbarThumb', t.selection))\n" +
         "  };\n" +
         "  for (var k in vars) document.documentElement.style.setProperty(k, vars[k]);\n" +
+        "  if (window._mmTokens) renderMinimap(window._mmTokens);\n" +
         "}\n" +
         "async function applyTheme() {\n" +
         "  var r = await fetch('/api/theme', {method: 'POST', body: themeIdx});\n" +
