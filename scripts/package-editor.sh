@@ -57,7 +57,7 @@ if [ -z "${KOF_JAR:-}" ] || [ ! -f "$KOF_JAR" ]; then
     trap 'rm -rf "$TMPJ" "$(dirname "$STAGE")"' EXIT
     echo "  baixando kof.jar da distro..."
     curl -sL "$JURL" -o "$TMPJ/kof.tar.gz"
-    tar xzf "$TMPJ/kof.tar.gz" -C "$TMPJ" lib/kof.jar
+    tar xzf "$TMPJ/kof.tar.gz" -C "$TMPJ" --strip-components=1 "kof-0.2.5-beta-${OS}-${ARCH}/lib/kof.jar"
     KOF_JAR=$(find "$TMPJ" -name kof.jar | head -1)
 fi
 cp "$KOF_JAR" "$JAR"
