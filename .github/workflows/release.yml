@@ -46,10 +46,9 @@ jobs:
         run: |
           curl -L https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-windows-x86_64/kof-0.2.5-beta-windows-x86_64.zip -o kof.zip
           powershell -Command "Expand-Archive -Force kof.zip kofdist"
-          KOFDIR=$(ls -d kof-distro*/ 2>/dev/null | head -1 || true)
-          if [ -z "$KOFDIR" ]; then KOFDIR=$(find . -maxdepth 1 -type d ! -name '.' ! -name 'kof*' ! -name 'editor' | head -1); fi
-          ls -la
-          echo "$PWD/$KOFDIR/bin" >> "$GITHUB_PATH" || echo "$PWD/kof-*/bin" >> "$GITHUB_PATH"
+          KOFDIR=$(find kofdist -maxdepth 1 -type d | tail -1)
+          ls kofdist
+          echo "$PWD/$KOFDIR/bin" >> "$GITHUB_PATH"
 
       - name: Package (instalador)
         shell: bash

@@ -33,7 +33,7 @@ TARGET="${OS}-${ARCH}"
 BASE="kof-editor-install-$VERSION-$TARGET"
 STAGE="$(mktemp -d)/$BASE"
 trap 'rm -rf "$(dirname "$STAGE")"' EXIT
-mkdir -p "$STAGE/editor"
+mkdir -p "$OUT" "$STAGE/editor"
 
 echo "== package-editor: instalador ($TARGET) =="
 
