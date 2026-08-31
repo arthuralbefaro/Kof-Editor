@@ -91,7 +91,8 @@ case "$OS" in
     macos) DEF_KOF_URL="$KOF_URL_MACOS" ;;
     *)     DEF_KOF_URL="$KOF_URL_LINUX" ;;
 esac
-sed -i "s|__KOF_URL__|${KOF_DISTRO_URL:-$DEF_KOF_URL}|" "$STAGE/install.sh"
+KOF_URL_FINAL="${KOF_DISTRO_URL:-$DEF_KOF_URL}"
+awk -v url="$KOF_URL_FINAL" '{ gsub(/__KOF_URL__/, url); print }' "$STAGE/install.sh" > "$STAGE/install.sh.tmp" && mv "$STAGE/install.sh.tmp" "$STAGE/install.sh"
 chmod +x "$STAGE/install.sh"
 
 # 3) instalador windows
@@ -125,7 +126,7 @@ echo == pronto ==
 echo   launcher: %LAUNCHER%
 echo   rode kof-editor e abra http://localhost:8765
 INSTALL
-sed -i "s|__KOF_URL_WINDOWS__|$KOF_URL_WINDOWS|" "$STAGE/install.bat"
+awk -v u="$KOF_URL_WINDOWS" '{ gsub(/__KOF_URL_WINDOWS__/, u); print }' "$STAGE/install.bat" > "$STAGE/install.bat.tmp" && mv "$STAGE/install.bat.tmp" "$STAGE/install.bat"
 
 # 4) arquivar
 cd "$(dirname "$STAGE")"
