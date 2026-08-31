@@ -38,6 +38,12 @@ escreve: o lexer de Kof é o lexer do editor.
 - **Terminal**: executa comandos via shell do host (não-interativo por ora)
 - **Paleta de comandos** (Ctrl+Shift+P), Quick Open (Ctrl+P), símbolos
   (Ctrl+Shift+O), snippets, busca por arquivo e por texto
+- **Temas granulares (schema v2)**: 6 paletas no menu Tema (Dracula, Nord,
+  GitHub, Solarized, Monokai, Light) e suporte a ~91 chaves em 3 blocos
+  (`if.*` interface / `ed.*` editor / `tk.*` tokens), com fallback para o
+  formato plano legado. Exporta YAML compatível com o
+  [theme maker](https://koflang.github.io/Kof-editor-theme-maker/) e importa
+  de volta — roundtrip testado nas duas direções.
 - **Núcleo rodando na JVM e no KofJS** (GraalJS) — revalidado no
   **Kof 0.2.3-beta** (29/08/2026), saída idêntica nos dois. O target
   **nativo regrediu** nesse release (o scanner completo cracha no ELF —
@@ -61,8 +67,13 @@ kof-editor --stop       # para servidor e janela
 │       └── web/        # a interface (HTML/CSS/JS gerados por Kof)
 ├── scripts/
 │   ├── web-combine.sh  # junta os módulos em build/editor-web.kf
+│   ├── ui-combine.sh   # junta os módulos desktop → build/editor-ui.kf
+│   ├── gui-build.sh    # builda o app desktop (Swing/KofDomHost)
 │   ├── install.sh      # instala o launcher kof-editor no sistema
 │   └── release.sh      # empacota tarballs JVM/native em dist/
+├── .github/workflows/
+│   ├── ci.yml          # combine + kof check a cada push/PR
+│   └── release.yml     # tarballs JVM/native a cada tag v*
 ├── docs/               # visão, estratégia, arquitetura, restrições do Kof
 └── inspiracao/         # referências de produto (não versionado)
 ```
@@ -82,10 +93,12 @@ atual) → plataforma (8).
 ```bash
 scripts/release.sh --jvm     # tarball JVM em dist/
 scripts/release.sh --native  # nativo (aguarda process.run no target native)
+scripts/install.sh           # instala launcher kof-editor (~/.local/bin)
 ```
 
-Pipeline de release no GitHub Actions (`.github/workflows/release.yml`):
-builda o Kof, o webview com ícone e empacota os tarballs a cada tag `v*`.
+Pipelines no GitHub Actions:
+- `.github/workflows/ci.yml` — combine + `kof check` a cada push/PR
+- `.github/workflows/release.yml` — webview com ícone + tarballs a cada tag `v*`
 
 ## Compilador
 
