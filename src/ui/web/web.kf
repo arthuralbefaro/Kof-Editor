@@ -435,9 +435,16 @@ pageJs(): String {
         "  }\n" +
         "  var out = '';\n" +
         "  for (var l = 0; l < starts.length; l++) {\n" +
-        "    var c = per[l] || getComputedStyle(document.documentElement).getPropertyValue('--minimap-fg') || '#33333c';\n" +
-        "    var w = 40 - (per[l] ? 14 : 0);\n" +
-        "    out += '<div class=\"mm-line\" data-ln=\"' + (l + 1) + '\" style=\"top:' + (l * 4) + 'px;width:' + w + 'px;background:' + c + '\"></div>';\n" +
+        "    var e = (l < starts.length - 1) ? starts[l + 1] - 1 : text.length;\n" +
+        "    var raw = text.slice(starts[l], e);\n" +
+        "    var content = raw.replace(/\\s+$/, '');\n" +
+        "    if (!content.trim()) continue;\n" +
+        "    var indent = (content.match(/^\\s*/) || [''])[0].length;\n" +
+        "    var body = content.replace(/^\\s+/, '');\n" +
+        "    var w = Math.max(2, Math.min(44, Math.round(body.length * 0.9)));\n" +
+        "    var c = per[l] || cv('--minimap-fg', '#33333c');\n" +
+        "    var alpha = per[l] ? 1 : 0.45;\n" +
+        "    out += '<div class=\"mm-line\" data-ln=\"' + (l + 1) + '\" style=\"top:' + (l * 4) + 'px;left:' + (8 + Math.min(20, indent)) + 'px;width:' + w + 'px;opacity:' + alpha + ';background:' + c + '\"></div>';\n" +
         "  }\n" +
         "  mm.innerHTML = out;\n" +
         "  mm.onclick = function(ev) {\n" +
@@ -485,6 +492,24 @@ pageJs(): String {
         "  gutter.scrollTop = ta.scrollTop;\n" +
         "  hl.scrollTop = ta.scrollTop;\n" +
         "  hl.scrollLeft = ta.scrollLeft;\n" +
+        "  var mm = document.getElementById('minimap');\n" +
+        "  if (mm) {\n" +
+        "    var lines = ta.value.split('\\n').length;\n" +
+        "    var mmH = mm.clientHeight, taH = ta.clientHeight;\n" +
+        "    var totalH = lines * 4;\n" +
+        "    var scale = (totalH > mmH && taH > 0) ? (taH - 16) / (totalH - mmH) : 0;\n" +
+        "    var shift = scale > 0 ? -ta.scrollTop * Math.max(0, (totalH - mmH) / Math.max(1, ta.scrollHeight - taH)) : 0;\n" +
+        "    var vp = document.getElementById('mm-viewport');\n" +
+        "    if (!vp) {\n" +
+        "      vp = document.createElement('div');\n" +
+        "      vp.id = 'mm-viewport';\n" +
+        "      vp.style.cssText = 'position:absolute;left:0;right:0;border:1px solid var(--accent);opacity:.25;pointer-events:none;border-radius:2px;';\n" +
+        "      mm.appendChild(vp);\n" +
+        "    }\n" +
+        "    var frac = ta.scrollHeight > taH ? taH / ta.scrollHeight : 1;\n" +
+        "    vp.style.top = (ta.scrollTop / Math.max(1, ta.scrollHeight) * Math.max(totalH, mmH)) + 'px';\n" +
+        "    vp.style.height = Math.max(12, frac * Math.max(totalH, mmH)) + 'px';\n" +
+        "  }\n" +
         "  if (window._activeLn) moveActiveLine(window._activeLn);\n" +
         "}\n" +
         "\n" +
