@@ -31,36 +31,41 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # kof CLI p/ combine + check
-      - name: Install kof
-        if: matrix.target != 'windows-x86_64'
-        run: |
-          curl -L https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-linux-x86_64/kof-0.2.5-beta-linux-x86_64.tar.gz -o kof.tar.gz
-          KOFDIR=$(tar tzf kof.tar.gz | head -1 | cut -d/ -f1)
-          tar xzf kof.tar.gz
-          echo "$PWD/$KOFDIR/bin" >> "$GITHUB_PATH"
-
-      - name: Install kof (windows)
-        if: matrix.target == 'windows-x86_64'
+      # tudo num step só: instala kof, empacota e sobe o artifact
+      - name: Package
         shell: bash
         run: |
-          curl -L https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-windows-x86_64/kof-0.2.5-beta-windows-x86_64.zip -o kof.zip
-          powershell -Command "Expand-Archive -Force kof.zip kofdist"
-          KOFDIR=$(find kofdist -maxdepth 1 -type d | tail -1)
-          ls kofdist
+          set -e
+          if [ "${{ matrix.target }}" = "windows-x86_64" ]; then
+            KOF_URL="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-windows-x86_64/kof-0.2.5-beta-windows-x86_64.zip"
+          else
+            KOF_URL="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-linux-x86_64/kof-0.2.5-beta-linux-x86_64.tar.gz"
+          fi
+          case "${{ matrix.target }}" in
+            macos-*) JURL="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-macos-arm64/kof-0.2.5-beta-macos-arm64.tar.gz" ;;
+            *)       JURL="$KOF_URL" ;;
+          esac
+          if [ "${{ matrix.target }}" = "windows-x86_64" ]; then
+            curl -sL "$JURL" -o kof.zip
+            powershell -Command "Expand-Archive -Force kof.zip kofdist"
+            KOFDIR=$(find kofdist -maxdepth 1 -type d | tail -1)
+          else
+            curl -sL "$JURL" -o kof.tar.gz
+            KOFDIR=$(tar tzf kof.tar.gz | head -1 | cut -d/ -f1)
+            tar xzf kof.tar.gz
+          fi
           echo "$PWD/$KOFDIR/bin" >> "$GITHUB_PATH"
-
-      - name: Package (instalador)
-        shell: bash
-        run: bash scripts/package-editor.sh
+          export PATH="$PWD/$KOFDIR/bin:$PATH"
+          KOF_JAR="$PWD/$KOFDIR/lib/kof.jar" bash scripts/package-editor.sh
+          ls -la dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: kof-editor-${{ matrix.target }}
           path: |
-            dist/kof-editor-install-*.tar.gz
-            dist/kof-editor-install-*.zip
+            dist/kof-editor-0.1.0-beta-*.tar.gz
+            dist/kof-editor-0.1.0-beta-*.zip
             dist/SHA256SUMS
 
   release:
@@ -78,7 +83,7 @@ jobs:
       - name: Prepare assets
         run: |
           mkdir -p assets
-          find . -path '*/dist/*' \( -name 'kof-editor-install-*.tar.gz' -o -name 'kof-editor-install-*.zip' \) -exec cp {} assets/ \;
+          find . -path '*/dist/*' \( -name 'kof-editor-0.1.0-beta-*.tar.gz' -o -name 'kof-editor-0.1.0-beta-*.zip' \) -exec cp {} assets/ \;
           # merge dos SHA256SUMS por plataforma
           find . -name SHA256SUMS -path '*/dist/*' -exec cat {} \; > assets/SHA256SUMS || true
           ls -la assets/
@@ -89,18 +94,19 @@ jobs:
           tag_name: kof-editor-0.1.0-beta
           name: Kof Editor 0.1.0-beta
           body: |
-            Instaladores do Kof Editor (0.1.0-beta).
+            Kof Editor 0.1.0-beta — executável por SO.
 
             ## Instalar
             1. Baixe o pacote do seu SO (abaixo)
             2. Extraia
             3. Rode `install.sh` (linux/macos) ou `install.bat` (windows)
 
-            O instalador baixa o runtime Kof (com JDK embutido) na primeira
-            execução e cria o launcher `kof-editor`. Depois:
+            O pacote contém `kof-editor.jar` (runtime Kof + editor embutido).
+            O instalador só baixa a distro com JDK se o sistema não tiver
+            Java 21+. Depois:
             ```
             kof-editor
-            # abra http://localhost:8765
+            # janela nativa ou http://localhost:8765
             ```
           files: assets/*
           draft: false
