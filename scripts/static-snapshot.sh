@@ -132,8 +132,20 @@ shim = r"""(function(){
     }
     return out;
   }
+  function simpleJsonToYaml(o) {
+    var L = ['# tema do Kof Editor (chave: "rgb r;g;b")', 'name: "' + (o.name||'Tema') + '"'];
+    var blocks = { 'interface:': [], 'editor:': [], 'tokens:': [] };
+    Object.keys(o).forEach(function(k){
+      if (k === 'name') return;
+      var b = k.indexOf('if.') === 0 ? 'interface:' : (k.indexOf('ed.') === 0 ? 'editor:' : 'tokens:');
+      blocks[b].push('  ' + k.replace(/^(if|ed|tk)\./, '') + ': "' + o[k] + '"');
+    });
+    Object.keys(blocks).forEach(function(b){ L.push(b); L = L.concat(blocks[b]); });
+    return L.join('\n');
+  }
   window.fetch = function(url, opts) {
-    url = String(url).replace(/^.*\/(api\/)/, '/$1');
+    // páginas estáticas não têm backend: qualquer request que não seja o
+    // próprio bundle é resolvida aqui (nada chega ao servidor do Pages)
     if (url === '/tokenize') return okJson(JSON.stringify(tokenize(String(opts && opts.body || ''))));
     if (url === '/api/theme') {
       var t = BUNDLE.themes[String(opts && opts.body || '0')] || BUNDLE.themes['0'];
@@ -152,7 +164,24 @@ shim = r"""(function(){
     if (url === '/api/git') return okText('pages (read-only)');
     if (url === '/api/gitstatus') return okText('modo demonstração: sem git');
     if (url === '/api/check') return okText('{"ok":true,"output":"modo demonstração: sem compilador"}');
-    if (url === '/api/diags') return okJson('[]');
+    if (url === '/api/diags' || url === '/api/outline') return okJson('[]');
+    if (url === '/api/gitcmd' || url === '/api/gitcommit') return okText('modo demonstração: sem git');
+    if (url === '/api/occurrences') return okJson('[]');
+    if (url === '/api/outline') return okJson('[]');
+    if (url === '/api/search') return okJson('[]');
+    if (url === '/api/folderpick') return okText('src');
+    if (url === '/api/gitcmd') return okText('modo demonstração: sem git');
+    if (url === '/api/write' || url === '/api/exec' || url === '/api/run' || url === '/api/spawn' || url === '/api/occurrences')
+      return okText(url === '/api/write' ? '{"ok":false}' : '');
+    if (url === '/api/gitdiff') return okText('modo demonstração: sem git');
+    if (url === '/api/gitcommit') return okText('{"ok":false,"output":"modo demonstração: sem git"}');
+    if (url === '/api/theme-export') {
+      var th = BUNDLE.themes[String(opts && opts.body || '0')] || BUNDLE.themes['0'];
+      return okText(simpleJsonToYaml(JSON.parse(th)));
+    }
+    if (url === '/api/theme-import') return okJson(BUNDLE.themes['0']);
+    if (url === '/api/occurrences' || url === '/api/outline') return okJson('[]');
+    if (url === '/api/run' || url === '/api/exec' || url === '/api/write') return okText('modo demonstração: desabilitado');
     return realFetch ? realFetch(url, opts) : Promise.reject(new Error('offline: ' + url));
   };
 })();"""
