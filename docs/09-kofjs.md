@@ -29,11 +29,10 @@ page Home {
 
 **Decisão de arquitetura**: o KofJS não é só "front para navegador" — ele é
 a **linguagem de front universal**, embutível na janela nativa do editor.
-O editor instalado abre **janela normal** (JVM ou nativo) e a interface é
-descrita em Kof, renderizada por um host que interpreta o DOM Kof — sem
-navegador. Hoje o host é `src/ui/jvm/KofDomHost.java` (interpreta o DOM em
-Swing); amanhã o KofJS renderiza o mesmo DOM direto, no browser ou na
-janela.
+O editor instalado abre **janela normal** (WebKitGTK via `bin/kof-webview`)
+e a interface é descrita em Kof, servida por `kof serve` — sem navegador
+visível. O antigo host Java/Swing (`KofDomHost`) foi removido; a janela
+nativa e o navegador compartilham o mesmo front (`src/ui/web/web.kf`).
 
 ## Estado do KofJS (0.2.3-beta — alpha funcional)
 
@@ -104,41 +103,14 @@ tokens e diagnostics com linha/coluna (calculados em Kof); o host pinta.
 Quando o KofJS existir, `renderApp` continua o mesmo — muda apenas o
 renderer.
 
-## Janela nativa (host atual)
+## Janela nativa
 
-O host (`KofDomHost`) implementa o window manager do DOM Kof na janela:
-
-- **Divisões verticais e horizontais** aninhadas (`Ctrl+\` à direita,
-  `Ctrl+Shift+\` abaixo), redimensionáveis pelo divisor
-- **Abas por divisão** (JTabbedPane em cada painel) com duplicar/fechar
-- **Editor colorido no próprio documento** (spans aplicados ao editor, sem
-  preview separado)
-- **Problemas nativos** (Ctrl+Shift+M): lista com linha/coluna, clique
-  navega para o erro
-- **Terminal integrado** (Ctrl+`): split inferior, executa `kof run`/build
-  e qualquer comando
-- **Undo/redo por documento** (Ctrl+Z / Ctrl+Y)
-- **Abrir/salvar via `kof.io`** (`File.readText`/`writeText` chamados pelo
-  host através do front Kof — o I/O é da linguagem, o host só mostra o
-  diálogo)
-- Menu: Arquivo, Editar, Exibir, Executar, **Tema** (atalhos de editores modernos)
-- **Activity bar com ícones desenhados** (Explorer, Buscar, Git, Contorno, Problemas)
-- **Explorer visível por padrão** — árvore com lazy-load, ícones por tipo,
-  watcher automático (refresh a cada 5s)
-- **Painel inferior com abas** (Problemas | Terminal)
-- **Minimap** colorido à direita do editor (cores dos tokens), clique navega
-- **Ctrl+P** Quick Open (recursivo, filtro) · **Ctrl+G** ir para linha
-- **Ctrl+F** buscar no arquivo (destaque + F3) · **Ctrl+D** próxima ocorrência
-- **Alt+Shift+↑/↓** mover linha · **Alt+Z** wrap · **Ctrl+/−** zoom
-- **Contorno** (outline): símbolos class/record/função detectados pelo lexer
-  Kof em `outlineKf` — duplo clique navega
-- **Middle-click** fecha a aba · **Ctrl+Shift+E/F/G** abrem as views laterais
-- Status bar: branch git, erros, UTF-8, idioma clicável, target clicável
-- **Temas padrão claro/escuro** definidos em Kof (`theme.kf`): `darkTheme()`
-  (Dracula) e `lightTheme()` (Claro) — o JSON sai de `themeAt(index)` e o
-  host aplica UI + tokens
-- **Exportar/importar tema em YAML**: `Tema → Exportar tema (YAML)...` /
-  `Importar tema (YAML)...` (formato `chave: "#RRGGBB"`)
+A janela nativa é o `bin/kof-webview` (WebKitGTK), presente na distro Kof:
+o launcher sobe `kof serve build/editor-web.kf` e aponta o webview para
+`http://localhost:8765`. Toda a UI do editor é Kof (`src/ui/web/web.kf`) —
+o mesmo front que roda no navegador e na demo web (Pages). Recursos
+atuais: explorer com lazy-load, git integrado, terminal, minimapa,
+quick open (Ctrl+P), busca, temas light/dark + import/export YAML.
 
 ## Dependências do KofJS (feedback para o Kof4j)
 
