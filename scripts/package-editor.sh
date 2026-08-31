@@ -16,7 +16,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 KOF_URL_LINUX="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-linux-x86_64/kof-0.2.5-beta-linux-x86_64.tar.gz"
 KOF_URL_MACOS="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-macos-arm64/kof-0.2.5-beta-macos-arm64.tar.gz"
 KOF_URL_WINDOWS="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-windows-x86_64/kof-0.2.5-beta-windows-x86_64.zip"
-VERSION="0.1.0-beta"
+VERSION="${EDITOR_VERSION:-$(cat "$ROOT/VERSION" 2>/dev/null || echo 0.0.0-beta)}"
 OUT="${OUTPUT_DIR:-$ROOT/dist}"
 
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"

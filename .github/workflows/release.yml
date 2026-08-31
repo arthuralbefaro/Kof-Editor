@@ -9,8 +9,47 @@ permissions:
   contents: write
 
 jobs:
+  bump:
+    name: Bump version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      bumped: ${{ steps.bump.outputs.bumped }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: bump
+        name: Bump patch por push
+        run: |
+          git config user.name "kof-bumper"
+          git config user.email "bumper@koflang.dev"
+          V=$(cat VERSION)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=$V" >> "$GITHUB_OUTPUT"
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # bump patch do sufixo -beta: 0.1.5-beta -> 0.1.6-beta
+          BASE="${V%-beta}"; PATCH="${BASE##*.}"
+          NV="${BASE%.*}.$((PATCH + 1))-beta"
+          echo "$NV" > /dev/null
+          echo "$NV" > VERSION
+          echo "version=$NV" >> "$GITHUB_OUTPUT"
+          if git diff --quiet VERSION; then
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+          else
+            git add VERSION
+            git commit -m "bump: versão $NV [skip ci]"
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+            echo "version=$NV" >> "$GITHUB_OUTPUT"
+          fi
+
   package:
     name: Package (${{ matrix.target }})
+    needs: bump
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -24,6 +63,12 @@ jobs:
             target: windows-x86_64
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Checkout bumped version
+        run: git pull --ff-only origin main
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -67,13 +112,13 @@ jobs:
         with:
           name: kof-editor-${{ matrix.target }}
           path: |
-            dist/kof-editor-0.1.0-beta-*.tar.gz
-            dist/kof-editor-0.1.0-beta-*.zip
+            dist/kof-editor-*.tar.gz
+            dist/kof-editor-*.zip
             dist/SHA256SUMS
 
   release:
     name: Publish release
-    needs: package
+    needs: [bump, package]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -86,7 +131,7 @@ jobs:
       - name: Prepare assets
         run: |
           mkdir -p assets
-          find . -path '*/dist/*' \( -name 'kof-editor-0.1.0-beta-*.tar.gz' -o -name 'kof-editor-0.1.0-beta-*.zip' \) -exec cp {} assets/ \;
+          find . -path '*/dist/*' \( -name 'kof-editor-*.tar.gz' -o -name 'kof-editor-*.zip' \) ! -name '*install*' -exec cp {} assets/ \;
           # merge dos SHA256SUMS por plataforma
           find . -name SHA256SUMS -path '*/dist/*' -exec cat {} \; > assets/SHA256SUMS || true
           ls -la assets/
@@ -94,8 +139,8 @@ jobs:
       - name: Release (tag fixa, atualizada a cada push)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: kof-editor-0.1.0-beta
-          name: Kof Editor 0.1.0-beta
+          tag_name: kof-editor-${{ needs.bump.outputs.version }}
+          name: Kof Editor ${{ needs.bump.outputs.version }}
           body: |
             Kof Editor 0.1.0-beta — executável por SO.
 
