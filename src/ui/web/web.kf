@@ -809,11 +809,15 @@ pageJs(): String {
         "  fetch('/api/theme-export', {method: 'POST', body: themeIdx}).then(function(r) { return r.text(); }).then(function(y) {\n" +
         "    var names = ['tema-dracula.yaml','tema-claro.yaml','tema-nord.yaml','tema-github.yaml','tema-solarized.yaml','tema-monokai.yaml'];\n" +
         "    var name = names[Number(themeIdx)] || 'tema.yaml';\n" +
-        "    var p = (currentDir ? currentDir + '/' : '') + name;\n" +
-        "    fetch('/api/write', {method: 'POST', body: p + '\\n' + y}).then(function(w) { return w.text(); }).then(function(ok) {\n" +
-        "      statusEl.textContent = ok === 'ok' ? 'tema exportado: ' + p : 'falha ao exportar tema';\n" +
-        "    });\n" +
-        "  });\n" +
+        "    var blob = new Blob([y], {type: 'text/yaml'});\n" +
+        "    var a = document.createElement('a');\n" +
+        "    a.href = URL.createObjectURL(blob);\n" +
+        "    a.download = name;\n" +
+        "    document.body.appendChild(a);\n" +
+        "    a.click();\n" +
+        "    setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 500);\n" +
+        "    statusEl.textContent = 'tema exportado: ' + name;\n" +
+        "  }).catch(function() { statusEl.textContent = 'falha ao exportar tema'; });\n" +
         "};\n" +
         "document.getElementById('mi-theme-import').onclick = function() {\n" +
         "  var p = prompt('Caminho do tema (.yaml):', (currentDir ? currentDir + '/' : '') + 'tema-escuro.yaml');\n" +
