@@ -878,7 +878,8 @@ pageJs(): String {
         "    '--minimap-bg': rgb(v('ed.minimapBg', t.bg)), '--minimap-fg': rgb(v('ed.minimapFg', t.selection)),\n" +
         "    '--status-bg': rgb(v('ed.statusBg', t.header)), '--status-fg': rgb(v('ed.statusFg', t.comment)), '--status-accent': rgb(v('ed.statusAccent', t.type)),\n" +
         "    '--terminal-bg': rgb(v('ed.terminalBg', t.terminal)), '--terminal-fg': rgb(v('ed.terminalFg', t.terminalFg)),\n" +
-        "    '--scrollbar': rgb(v('ed.scrollbarThumb', t.selection))\n" +
+        "    '--scrollbar': rgb(v('ed.scrollbarThumb', t.selection)),\n" +
+        "    '--btn': rgb(v('if.buttonBg', t.selection)), '--input': rgb(v('if.inputBg', t.bg))\n" +
         "  };\n" +
         "  for (var k in vars) document.documentElement.style.setProperty(k, vars[k]);\n" +
         "  if (window._mmTokens) renderMinimap(window._mmTokens);\n" +

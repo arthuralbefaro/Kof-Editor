@@ -117,6 +117,51 @@ class Theme {
     Int warningUnderline = 0xFFFFB86C88
 }
 
+
+// re-deriva o chrome da IDE a partir das cores base da paleta
+deriveChrome(Theme t): Theme {
+    var header = t.header
+    var bg = t.bg
+    var fg = t.fg
+    var sel = t.selection
+    t.sidebarBg = header
+    t.sidebarFg = t.fg
+    t.sidebarHover = sel
+    t.sidebarSelected = sel
+    t.activityBg = header
+    t.activityFg = t.comment
+    t.activityActive = t.type
+    t.menuBg = header
+    t.menuFg = t.fg
+    t.menuHover = sel
+    t.headerBg = header
+    t.headerFg = t.fg
+    t.headerBorder = sel
+    t.inputBg = t.bg
+    t.inputFg = t.fg
+    t.inputBorder = sel
+    t.inputBorderFocus = t.type
+    t.inputPlaceholder = t.comment
+    t.tabBg = header
+    t.tabFg = t.comment
+    t.tabActiveBg = t.bg
+    t.tabActiveFg = t.fg
+    t.tabBorder = t.type
+    t.statusBg = header
+    t.statusFg = t.comment
+    t.statusAccent = t.type
+    t.cursor = t.fg
+    t.currentLineBorder = sel
+    t.indentGuide = sel
+    t.gutterActive = t.fg
+    t.foldingIcon = t.comment
+    t.minimapBg = t.bg
+    t.minimapFg = sel
+    t.scrollbarThumb = sel
+    t.scrollbarHover = t.comment
+    return t
+}
+
 darkTheme(): Theme {
     return new Theme()
 }
@@ -141,6 +186,47 @@ lightThemeFrom(Theme t): Theme {
     t.punctuation = 0xFF24292E
     t.identifier = 0xFF24292E
     t.error = 0xFFCF222E
+    // ── interface clara (senão o chrome fica escuro sobre tema claro) ──
+    t.activityBg = 0xFFF6F8FA
+    t.activityFg = 0xFF57606A
+    t.activityActive = 0xFFCF222E
+    t.activityBadge = 0xFFCF222E
+    t.sidebarBg = 0xFFF6F8FA
+    t.sidebarFg = 0xFF24292E
+    t.sidebarHover = 0xFFEAEEF2
+    t.sidebarSelected = 0xFFDBEDFF
+    t.inputBg = 0xFFFFFFFF
+    t.inputFg = 0xFF24292E
+    t.inputBorder = 0xFFD0D7DE
+    t.inputBorderFocus = 0xFF0969DA
+    t.inputPlaceholder = 0xFF6E7781
+    t.tabBg = 0xFFEAEEF2
+    t.tabFg = 0xFF57606A
+    t.tabActiveBg = 0xFFFFFFFF
+    t.tabActiveFg = 0xFF24292E
+    t.tabBorder = 0xFFFD8C00
+    t.menuBg = 0xFFFFFFFF
+    t.menuFg = 0xFF24292E
+    t.menuHover = 0xFFDBEDFF
+    t.headerBg = 0xFFF6F8FA
+    t.headerFg = 0xFF24292E
+    t.headerBorder = 0xFFD0D7DE
+    t.cursor = 0xFF24292E
+    t.currentLineBorder = 0xFFD0D7DE
+    t.indentGuide = 0xFFE1E4E8
+    t.bracketMatch = 0xFF0969DA55
+    t.findHighlight = 0xFFFFEA7F
+    t.gutterActive = 0xFF24292E
+    t.foldingIcon = 0xFF57606A
+    t.diffMarkerFg = 0xFFF6F8FA
+    t.minimapBg = 0xFFF6F8FA
+    t.minimapFg = 0xFFC8D1DA
+    t.minimapCurrentLine = 0xFF24292E33
+    t.statusBg = 0xFFEFF2F5
+    t.statusFg = 0xFF57606A
+    t.statusAccent = 0xFF0969DA
+    t.scrollbarThumb = 0xFF8C959F66
+    t.scrollbarHover = 0xFF57606A
     return t
 }
 
@@ -296,6 +382,7 @@ paletteNord(): Theme {
     t.punctuation = 0xFFECEFF4
     t.identifier = 0xFFECEFF4
     t.error = 0xFFBF616A
+    t = deriveChrome(t)
     return t
 }
 
@@ -320,6 +407,7 @@ paletteGitHubDark(): Theme {
     t.punctuation = 0xFFE6EDF3
     t.identifier = 0xFFE6EDF3
     t.error = 0xFFF85149
+    t = deriveChrome(t)
     return t
 }
 
@@ -344,6 +432,7 @@ paletteSolarizedDark(): Theme {
     t.punctuation = 0xFF93A1A1
     t.identifier = 0xFF93A1A1
     t.error = 0xFFDC322F
+    t = deriveChrome(t)
     return t
 }
 
@@ -368,6 +457,7 @@ paletteMonokai(): Theme {
     t.punctuation = 0xFFF8F8F2
     t.identifier = 0xFFF8F8F2
     t.error = 0xFFF92672
+    t = deriveChrome(t)
     return t
 }
 
