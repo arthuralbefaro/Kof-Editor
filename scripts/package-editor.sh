@@ -12,6 +12,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# URLs da distro Kof (com JDK embutido) — usadas quando o instalador precisa de Java
+KOF_URL_LINUX="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-linux-x86_64/kof-0.2.5-beta-linux-x86_64.tar.gz"
+KOF_URL_MACOS="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-macos-arm64/kof-0.2.5-beta-macos-arm64.tar.gz"
+KOF_URL_WINDOWS="https://github.com/KofLang/Kof4j/releases/download/kof-0.2.6-beta-windows-x86_64/kof-0.2.5-beta-windows-x86_64.zip"
 VERSION="0.1.0-beta"
 OUT="${OUTPUT_DIR:-$ROOT/dist}"
 
@@ -112,45 +116,46 @@ fi
 
 # launcher
 mkdir -p "$BIN_DIR"
-cat > "$BIN_DIR/kof-editor" <<LAUNCH
+cat > "$BIN_DIR/kof-editor" <<'LAUNCH'
 #!/usr/bin/env bash
 # Kof Editor — jar executável + janela nativa
-DEST="$DEST"
-PORT="\${KOF_EDITOR_PORT:-8765}"
+DEST="__DEST__"
+PORT="${KOF_EDITOR_PORT:-8765}"
 PID_DIR="$HOME/.config/kof-editor"
-JAVA_BIN="$JAVA_BIN"
+JAVA_BIN="__JAVA_BIN__"
 mkdir -p "$PID_DIR" "$DEST/editor"
 
-if [ "\${1:-}" = "--stop" ]; then
+if [ "${1:-}" = "--stop" ]; then
     for f in server.pid webview.pid; do
-        [ -f "$PID_DIR/\$f" ] && kill "\$(cat "$PID_DIR/\$f")" 2>/dev/null; rm -f "$PID_DIR/\$f"
+        [ -f "$PID_DIR/$f" ] && kill "$(cat "$PID_DIR/$f")" 2>/dev/null; rm -f "$PID_DIR/$f"
     done
     echo "kof-editor parado"; exit 0
 fi
 
 # extrai o src.kf do jar (fonte do editor embutido no executável)
 if [ ! -f "$DEST/editor/src.kf" ]; then
-    cd "$DEST/editor" && "$JAVA_BIN" -jar "$DEST/lib/kof-editor.jar" --extract 2>/dev/null || unzip -o -q "$DEST/lib/kof-editor.jar" editor/src.kf
+    (cd "$DEST/editor" && unzip -o -q "$DEST/lib/kof-editor.jar" editor/src.kf)
 fi
 
-if [ -f "$PID_DIR/server.pid" ] && kill -0 "\$(cat "$PID_DIR/server.pid")" 2>/dev/null; then
+if [ -f "$PID_DIR/server.pid" ] && kill -0 "$(cat "$PID_DIR/server.pid")" 2>/dev/null; then
     echo "servidor já rodando"
 else
-    nohup "\$JAVA_BIN" -jar "$DEST/lib/kof-editor.jar" serve "$DEST/editor/src.kf" --port "\$PORT" >/dev/null 2>&1 &
-    echo \$! > "$PID_DIR/server.pid"
+    nohup "$JAVA_BIN" -jar "$DEST/lib/kof-editor.jar" serve "$DEST/editor/src.kf" --port "$PORT" >/dev/null 2>&1 &
+    echo $! > "$PID_DIR/server.pid"
     sleep 3
 fi
 
-URL="http://localhost:\$PORT"
+URL="http://localhost:$PORT"
 if [ -x "$DEST/bin/kof-webview" ]; then
-    nohup "$DEST/bin/kof-webview" "\$URL" "Kof Editor" "$DEST/editor/kof.png" >/dev/null 2>&1 &
-    echo \$! > "$PID_DIR/webview.pid"
+    nohup "$DEST/bin/kof-webview" "$URL" "Kof Editor" "$DEST/editor/kof.png" >/dev/null 2>&1 &
+    echo $! > "$PID_DIR/webview.pid"
     echo "Kof Editor aberto (janela nativa)"
 else
-    echo "Kof Editor: \$URL"
-    (xdg-open "\$URL" 2>/dev/null || open "\$URL" 2>/dev/null) &
+    echo "Kof Editor: $URL"
+    (xdg-open "$URL" 2>/dev/null || open "$URL" 2>/dev/null) &
 fi
 LAUNCH
+awk -v d="$DEST" -v j="$JAVA_BIN" '{ gsub(/__DEST__/, d); gsub(/__JAVA_BIN__/, j); print }' "$BIN_DIR/kof-editor" > "$BIN_DIR/kof-editor.tmp" && mv "$BIN_DIR/kof-editor.tmp" "$BIN_DIR/kof-editor"
 chmod +x "$BIN_DIR/kof-editor"
 
 # desktop entry (linux)
