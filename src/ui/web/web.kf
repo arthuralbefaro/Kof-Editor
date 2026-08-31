@@ -152,17 +152,17 @@ pageCss(): String {
         "#minimap { width: 56px; background: var(--minimap-bg, var(--editor)); border-left: 1px solid var(--border);\n" +
         "  overflow: hidden; position: relative; flex: none; }\n" +
         "#minimap .mm-line { position: absolute; left: 8px; height: 3px; border-radius: 1px; }\n" +
-        "#sidebar { width: 260px; min-width: 180px; max-width: 480px; background: var(--sidebar);\n" +
-        "  border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: auto; }\n" +
+        "#sidebar { width: 260px; min-width: 180px; max-width: min(480px, 40vw); background: var(--sidebar);\n" +
+        "  border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: auto; flex-shrink: 1; }\n" +
         "#side-grip { width: 4px; cursor: ew-resize; background: transparent; flex: none; }\n" +
         "#side-grip:hover, #side-grip.dragging { background: var(--accent); }\n" +
-        "#dirbar { display: flex; gap: 8px; padding: 10px 10px 6px; flex: none; }\n" +
-        "#dirinput, #searchinput { flex: 1; background: var(--input-bg, var(--editor)); color: var(--fg); border: 1px solid var(--input-border, var(--border));\n" +
+        "#dirbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 10px 6px; flex: none; }\n" +
+        "#dirinput, #searchinput { flex: 1 1 120px; min-width: 0; box-sizing: border-box; background: var(--input-bg, var(--editor)); color: var(--fg); border: 1px solid var(--input-border, var(--border));\n" +
         "  border-radius: 5px; padding: 6px 10px; outline: none; height: 30px; }\n" +
         "#dirinput:focus, #searchinput:focus { border-color: var(--accent); }\n" +
-        "#dirbtn, #searchbtn { background: var(--sel); color: var(--fg); border: 1px solid var(--border);\n" +
+        "#dirbtn, #searchbtn { background: var(--sel); color: var(--fg); border: 1px solid var(--border); white-space: nowrap; flex: none;\n" +
         "  border-radius: 5px; padding: 6px 12px; cursor: pointer; height: 30px; font-size: 13px; flex: none; }\n" +
-        "#searchbar { display: flex; gap: 8px; padding: 6px 10px; flex: none; }\n" +
+        "#searchbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 10px; flex: none; }\n" +
         "#searchresults { display: none; max-height: 35%; overflow: auto; border-bottom: 1px solid var(--border); flex: none; }\n" +
         "#searchresults .sr { padding: 3px 10px; font-family: monospace; font-size: 12px; cursor: pointer; white-space: nowrap; }\n" +
         "#searchresults .sr:hover { background: var(--sel); }\n" +
@@ -274,6 +274,7 @@ pageCss(): String {
         "  .ptab { padding: 7px 9px; font-size: 10px; }\n" +
         "}\n" +
         "@media (max-width: 600px) {\n" +
+        "  #sidebar { width: 75vw; }\n" +
         "  #activity { width: 38px; }\n" +
         "  #status { font-size: 11px; flex-wrap: wrap; }\n" +
         "  #panel { height: 45vh; }\n" +
